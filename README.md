@@ -23,10 +23,12 @@ The iOS app is built with SwiftUI and supports:
 
 ## Backend
 
-The backend is a Node.js Express server that provides:
-- REST API endpoints
+The backend is a Python FastAPI server deployed on Google Cloud Run that provides:
+- REST API endpoints with automatic OpenAPI documentation
 - CORS support for mobile app
 - Health check endpoints
+- Cloud Run deployment with auto-scaling
+- Google Cloud integration
 
 ## Getting Started
 
@@ -34,14 +36,22 @@ The backend is a Node.js Express server that provides:
 1. Open `ios/Veramo.xcodeproj` in Xcode
 2. Build and run the project
 
-### Backend Development
+### Backend Development (Local)
 1. Navigate to `backend/` directory
-2. Install dependencies: `npm install`
-3. Start development server: `npm run dev`
+2. Create virtual environment: `python -m venv venv`
+3. Activate virtual environment: `source venv/bin/activate` (macOS/Linux) or `venv\Scripts\activate` (Windows)
+4. Install dependencies: `pip install -r requirements.txt`
+5. Start development server: `python run_local.py`
+
+### Backend Deployment (Cloud Run)
+1. Install Google Cloud CLI and authenticate
+2. Run deployment script: `./deploy.sh`
+3. Service will be available at the provided Cloud Run URL
 
 ## Requirements
 
 - Xcode 15.0+
 - iOS 17.0+ (target device)
-- Node.js 18+
-- npm or yarn
+- Python 3.11+
+- Google Cloud CLI (for deployment)
+- Docker (for containerization)
