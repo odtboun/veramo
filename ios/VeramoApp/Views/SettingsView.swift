@@ -162,7 +162,7 @@ struct SettingsView: View {
             }
         }
         .sheet(isPresented: $showingPartnerConnection) {
-            // TODO: Add PartnerConnectionView back to project
+            // TODO: Add PartnerConnectionView to Xcode project
             Text("Partner Connection")
                 .onDisappear {
                     checkPartnerStatus()

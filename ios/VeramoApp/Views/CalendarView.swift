@@ -5,100 +5,109 @@ struct CalendarView: View {
     @State private var selectedDate = Date()
     @State private var currentMonth = Date()
     @State private var calendarImages: [String: [String]] = [:]
+    @State private var hasCouple = false
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Lock if no couple
-                CalendarAccessGate()
-                // Month header
-                HStack {
-                    Button(action: previousMonth) {
-                        Image(systemName: "chevron.left")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                    }
-                    
-                    Spacer()
-                    
-                    Text(currentMonth, formatter: monthFormatter)
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    Spacer()
-                    
-                    Button(action: nextMonth) {
-                        Image(systemName: "chevron.right")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 16)
-                
-                // Calendar grid
-                ScrollView {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
-                        // Day headers
-                        ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
-                            Text(day)
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.secondary)
-                                .frame(height: 30)
+            if hasCouple {
+                // Show calendar when paired
+                VStack(spacing: 0) {
+                    // Month header
+                    HStack {
+                        Button(action: previousMonth) {
+                            Image(systemName: "chevron.left")
+                                .font(.title2)
+                                .foregroundColor(.blue)
                         }
                         
-                        // Calendar days
-                        ForEach(daysInMonth, id: \.self) { date in
-                            CalendarDayView(
-                                date: date,
-                                isSelected: Calendar.current.isDate(date, inSameDayAs: selectedDate),
-                                hasImage: calendarImages[dateKey(for: date)] != nil,
-                                imageUrl: calendarImages[dateKey(for: date)]?.first
-                            ) {
-                                selectedDate = date
-                            }
+                        Spacer()
+                        
+                        Text(currentMonth, formatter: monthFormatter)
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        
+                        Spacer()
+                        
+                        Button(action: nextMonth) {
+                            Image(systemName: "chevron.right")
+                                .font(.title2)
+                                .foregroundColor(.blue)
                         }
                     }
                     .padding(.horizontal)
-                }
-                
-                // Selected date details
-                if let images = calendarImages[dateKey(for: selectedDate)], !images.isEmpty {
-                    VStack(spacing: 16) {
-                        Divider()
-                        
-                        Text("Memories for \(selectedDate, formatter: dateFormatter)")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                                ForEach(images, id: \.self) { imageUrl in
-                                    AsyncImage(url: URL(string: imageUrl)) { image in
-                                        image
-                                            .resizable()
-                                            .aspectRatio(1, contentMode: .fit)
-                                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    } placeholder: {
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(.ultraThinMaterial)
-                                            .aspectRatio(1, contentMode: .fit)
-                                    }
-                                    .frame(width: 120, height: 120)
+                    .padding(.vertical, 16)
+                    
+                    // Calendar grid
+                    ScrollView {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+                            // Day headers
+                            ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
+                                Text(day)
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                                    .frame(height: 30)
+                            }
+                            
+                            // Calendar days
+                            ForEach(daysInMonth, id: \.self) { date in
+                                CalendarDayView(
+                                    date: date,
+                                    isSelected: Calendar.current.isDate(date, inSameDayAs: selectedDate),
+                                    hasImage: calendarImages[dateKey(for: date)] != nil,
+                                    imageUrl: calendarImages[dateKey(for: date)]?.first
+                                ) {
+                                    selectedDate = date
                                 }
                             }
-                            .padding(.horizontal)
                         }
+                        .padding(.horizontal)
                     }
-                    .padding()
+                    
+                    // Selected date details
+                    if let images = calendarImages[dateKey(for: selectedDate)], !images.isEmpty {
+                        VStack(spacing: 16) {
+                            Divider()
+                            
+                            Text("Memories for \(selectedDate, formatter: dateFormatter)")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(images, id: \.self) { imageUrl in
+                                        AsyncImage(url: URL(string: imageUrl)) { image in
+                                            image
+                                                .resizable()
+                                                .aspectRatio(1, contentMode: .fit)
+                                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        } placeholder: {
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(.ultraThinMaterial)
+                                                .aspectRatio(1, contentMode: .fit)
+                                        }
+                                        .frame(width: 120, height: 120)
+                                    }
+                                }
+                                .padding(.horizontal)
+                            }
+                        }
+                        .padding()
+                    }
                 }
+                .navigationTitle("Our Calendar")
+                .navigationBarTitleDisplayMode(.large)
+                .onAppear {
+                    loadSampleData()
+                }
+            } else {
+                // Show gate when not paired
+                CalendarAccessGate()
             }
-            .navigationTitle("Our Calendar")
-            .navigationBarTitleDisplayMode(.large)
-            .onAppear {
-                loadSampleData()
-            }
+        }
+        .task {
+            let couple = await SupabaseService.shared.fetchCoupleId()
+            await MainActor.run { self.hasCouple = (couple != nil) }
         }
     }
     
@@ -202,7 +211,7 @@ struct CalendarAccessGate: View {
             await MainActor.run { self.hasCouple = (couple != nil) }
         }
         .sheet(isPresented: $showingPartnerConnection) {
-            // TODO: Add PartnerConnectionView back to project
+            // TODO: Add PartnerConnectionView to Xcode project
             Text("Partner Connection")
                 .onDisappear {
                     Task {
