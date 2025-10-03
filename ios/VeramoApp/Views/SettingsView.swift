@@ -162,8 +162,7 @@ struct SettingsView: View {
             }
         }
         .sheet(isPresented: $showingPartnerConnection) {
-            // TODO: Add PartnerConnectionView to Xcode project
-            Text("Partner Connection")
+            PartnerConnectionView()
                 .onDisappear {
                     checkPartnerStatus()
                 }
@@ -172,9 +171,9 @@ struct SettingsView: View {
     
     private func checkPartnerStatus() {
         Task {
-            let coupleId = await SupabaseService.shared.fetchCoupleId()
+            let couple = await SupabaseService.shared.fetchCouple()
             await MainActor.run {
-                hasPartner = (coupleId != nil)
+                hasPartner = (couple != nil)
             }
         }
     }

@@ -106,7 +106,7 @@ struct CalendarView: View {
             }
         }
         .task {
-            let couple = await SupabaseService.shared.fetchCoupleId()
+            let couple = await SupabaseService.shared.fetchCouple()
             await MainActor.run { self.hasCouple = (couple != nil) }
         }
     }
@@ -207,15 +207,14 @@ struct CalendarAccessGate: View {
             }
         }
         .task {
-            let couple = await SupabaseService.shared.fetchCoupleId()
+            let couple = await SupabaseService.shared.fetchCouple()
             await MainActor.run { self.hasCouple = (couple != nil) }
         }
         .sheet(isPresented: $showingPartnerConnection) {
-            // TODO: Add PartnerConnectionView to Xcode project
-            Text("Partner Connection")
+            PartnerConnectionView()
                 .onDisappear {
                     Task {
-                        let couple = await SupabaseService.shared.fetchCoupleId()
+                        let couple = await SupabaseService.shared.fetchCouple()
                         await MainActor.run { self.hasCouple = (couple != nil) }
                     }
                 }
