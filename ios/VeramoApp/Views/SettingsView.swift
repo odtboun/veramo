@@ -1,9 +1,13 @@
 import SwiftUI
 import Observation
+import Supabase
 
 struct SettingsView: View {
-    @Environment(\.dismiss) private var dismiss
     @Bindable var authVM: AuthViewModel
+    @State private var hasPartner = false
+    @State private var showingPartnerConnection = false
+    @State private var isRemovingPartner = false
+    
     var body: some View {
         NavigationView {
             List {
@@ -30,9 +34,9 @@ struct SettingsView: View {
                                 .font(.headline)
                                 .fontWeight(.semibold)
                             
-                            Text("Not Connected")
+                            Text(hasPartner ? "Connected" : "Not Connected")
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(hasPartner ? .green : .secondary)
                         }
                         
                         Spacer()
@@ -40,26 +44,67 @@ struct SettingsView: View {
                     .padding(.vertical, 8)
                 }
                 
-                // Pairing Section
+                // Partner Section
                 Section("Partner") {
-                    Button(action: {
-                        // Connect with partner
-                    }) {
+                    if hasPartner {
+                        // Show partner info and remove option
                         HStack {
                             Image(systemName: "person.2.fill")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.green)
                             
-                            Text("Connect with Partner")
-                                .font(.headline)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Partner Connected")
+                                    .font(.headline)
+                                
+                                Text("You're sharing memories together")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
                             
                             Spacer()
                             
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
                         }
+                        .padding(.vertical, 4)
+                        
+                        Button(action: removePartner) {
+                            HStack {
+                                Image(systemName: "person.2.slash")
+                                    .foregroundColor(.red)
+                                
+                                Text("Remove Partner")
+                                    .font(.headline)
+                                
+                                Spacer()
+                                
+                                if isRemovingPartner {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                }
+                            }
+                        }
+                        .foregroundColor(.red)
+                        .disabled(isRemovingPartner)
+                    } else {
+                        // Show connect option
+                        Button(action: { showingPartnerConnection = true }) {
+                            HStack {
+                                Image(systemName: "person.2.fill")
+                                    .foregroundColor(.blue)
+                                
+                                Text("Connect with Partner")
+                                    .font(.headline)
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .foregroundColor(.primary)
                     }
-                    .foregroundColor(.primary)
                 }
                 
                 // Subscription Section
@@ -112,6 +157,42 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
+            .onAppear {
+                checkPartnerStatus()
+            }
+        }
+        .sheet(isPresented: $showingPartnerConnection) {
+            PartnerConnectionView()
+                .onDisappear {
+                    checkPartnerStatus()
+                }
+        }
+    }
+    
+    private func checkPartnerStatus() {
+        Task {
+            let coupleId = await SupabaseService.shared.fetchCoupleId()
+            await MainActor.run {
+                hasPartner = (coupleId != nil)
+            }
+        }
+    }
+    
+    private func removePartner() {
+        isRemovingPartner = true
+        Task {
+            do {
+                try await SupabaseService.shared.removePartner()
+                await MainActor.run {
+                    hasPartner = false
+                    isRemovingPartner = false
+                }
+            } catch {
+                await MainActor.run {
+                    isRemovingPartner = false
+                    print("Failed to remove partner: \(error)")
+                }
+            }
         }
     }
 }

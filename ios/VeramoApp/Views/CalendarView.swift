@@ -1,4 +1,5 @@
 import SwiftUI
+import Supabase
 
 struct CalendarView: View {
     @State private var selectedDate = Date()
@@ -8,6 +9,8 @@ struct CalendarView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                // Lock if no couple
+                CalendarAccessGate()
                 // Month header
                 HStack {
                     Button(action: previousMonth) {
@@ -145,6 +148,69 @@ struct CalendarView: View {
         formatter.dateFormat = "MMM d, yyyy"
         return formatter
     }()
+}
+
+struct CalendarAccessGate: View {
+    @State private var hasCouple = false
+    @State private var showingPartnerConnection = false
+    
+    var body: some View {
+        Group {
+            if !hasCouple {
+                VStack(spacing: 20) {
+                    Image(systemName: "person.2.circle.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.blue)
+                    
+                    VStack(spacing: 8) {
+                        Text("Connect with Your Partner")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Text("Share your memories in a private calendar that only you and your partner can see.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    Button(action: { showingPartnerConnection = true }) {
+                        HStack {
+                            Image(systemName: "person.2.fill")
+                            Text("Connect with Partner")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.blue)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding()
+                .background {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(.ultraThinMaterial)
+                }
+                .padding(.horizontal)
+            }
+        }
+        .task {
+            let couple = await SupabaseService.shared.fetchCoupleId()
+            await MainActor.run { self.hasCouple = (couple != nil) }
+        }
+        .sheet(isPresented: $showingPartnerConnection) {
+            PartnerConnectionView()
+                .onDisappear {
+                    Task {
+                        let couple = await SupabaseService.shared.fetchCoupleId()
+                        await MainActor.run { self.hasCouple = (couple != nil) }
+                    }
+                }
+        }
+    }
 }
 
 struct CalendarDayView: View {
