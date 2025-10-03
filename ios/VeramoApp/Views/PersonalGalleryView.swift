@@ -1,16 +1,20 @@
 import SwiftUI
+import PhotosUI
+import Supabase
 
 struct PersonalGalleryView: View {
-    @State private var images: [String] = []
-    @State private var selectedImage: String?
+    struct GalleryItem: Identifiable, Hashable { let id: UUID = .init(); let url: URL; let storagePath: String }
+    @State private var items: [GalleryItem] = []
+    @State private var selected: GalleryItem?
     @State private var showingCropView = false
+    @State private var photoSelection: PhotosPickerItem?
     
     var body: some View {
         NavigationView {
             ScrollView {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
-                    ForEach(images, id: \.self) { imageUrl in
-                        AsyncImage(url: URL(string: imageUrl)) { image in
+                    ForEach(items) { item in
+                        AsyncImage(url: item.url) { image in
                             image
                                 .resizable()
                                 .aspectRatio(1, contentMode: .fit)
@@ -25,19 +29,17 @@ struct PersonalGalleryView: View {
                                 }
                         }
                         .onTapGesture {
-                            selectedImage = imageUrl
+                            selected = item
                             showingCropView = true
                         }
                         .contextMenu {
                             Button("Share to Calendar") {
-                                selectedImage = imageUrl
+                                selected = item
                                 showingCropView = true
                             }
                             
                             Button("Delete", role: .destructive) {
-                                if let index = images.firstIndex(of: imageUrl) {
-                                    images.remove(at: index)
-                                }
+                                if let idx = items.firstIndex(of: item) { items.remove(at: idx) }
                             }
                         }
                     }
@@ -48,39 +50,68 @@ struct PersonalGalleryView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Add Photo") {
-                        addRandomImage()
+                    PhotosPicker(selection: $photoSelection, matching: .images) {
+                        HStack { Image(systemName: "plus"); Text("Add Photo") }
                     }
-                    .font(.headline)
-                    .foregroundColor(.blue)
                 }
             }
             .sheet(isPresented: $showingCropView) {
-                if let imageUrl = selectedImage {
-                    CropImageView(imageUrl: imageUrl) { croppedImage in
-                        // Handle cropped image
-                        images.append(croppedImage)
-                        selectedImage = nil
-                    }
+                if let selected {
+                    CropImageView(imageUrl: selected.url.absoluteString) { _ in }
                 }
             }
             .onAppear {
-                loadInitialImages()
+                Task { await fetchGallery() }
+            }
+            .onChange(of: photoSelection) { _, newValue in
+                guard let newValue else { return }
+                Task { await uploadPickedPhoto(newValue) }
             }
         }
     }
     
-    private func loadInitialImages() {
-        // Load 6 random images for initial gallery
-        for _ in 0..<6 {
-            addRandomImage()
-        }
+    private func fetchGallery() async {
+        do {
+            let user = try await SupabaseService.shared.client.auth.session.user
+            struct Img: Decodable { let storage_path: String }
+            let rows: [Img] = try await SupabaseService.shared.client
+                .from("images")
+                .select("storage_path")
+                .eq("owner_id", value: user.id)
+                .order("created_at", ascending: false)
+                .execute().value
+            let signed = try await withThrowingTaskGroup(of: GalleryItem?.self) { group -> [GalleryItem] in
+                for row in rows {
+                    group.addTask {
+                        let url = try await SupabaseService.shared.client.storage
+                            .from(SupabaseService.shared.imagesBucket)
+                            .createSignedURL(path: row.storage_path, expiresIn: 3600)
+                        return GalleryItem(url: url, storagePath: row.storage_path)
+                    }
+                }
+                var out: [GalleryItem] = []
+                for try await v in group { if let v { out.append(v) } }
+                return out
+            }
+            await MainActor.run { self.items = signed }
+        } catch { print("Fetch gallery failed: \(error)") }
     }
-    
-    private func addRandomImage() {
-        let randomId = Int.random(in: 1...1000)
-        let imageUrl = "https://picsum.photos/400/400?random=\(randomId)"
-        images.append(imageUrl)
+
+    private func uploadPickedPhoto(_ item: PhotosPickerItem) async {
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else { return }
+            let user = try await SupabaseService.shared.client.auth.session.user
+            let fileName = "\(user.id)/\(UUID().uuidString).jpg"
+            try await SupabaseService.shared.client.storage
+                .from(SupabaseService.shared.imagesBucket)
+                .upload(fileName, data: data, options: FileOptions(contentType: "image/jpeg"))
+            struct NewImage: Encodable { let owner_id: UUID; let storage_path: String }
+            _ = try await SupabaseService.shared.client
+                .from("images")
+                .insert(NewImage(owner_id: user.id, storage_path: fileName))
+                .execute()
+            await fetchGallery()
+        } catch { print("Upload failed: \(error)") }
     }
 }
 
