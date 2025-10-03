@@ -162,7 +162,8 @@ struct SettingsView: View {
             }
         }
         .sheet(isPresented: $showingPartnerConnection) {
-            PartnerConnectionView()
+            // TODO: Add PartnerConnectionView back to project
+            Text("Partner Connection")
                 .onDisappear {
                     checkPartnerStatus()
                 }

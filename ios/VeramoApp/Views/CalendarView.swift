@@ -202,7 +202,8 @@ struct CalendarAccessGate: View {
             await MainActor.run { self.hasCouple = (couple != nil) }
         }
         .sheet(isPresented: $showingPartnerConnection) {
-            PartnerConnectionView()
+            // TODO: Add PartnerConnectionView back to project
+            Text("Partner Connection")
                 .onDisappear {
                     Task {
                         let couple = await SupabaseService.shared.fetchCoupleId()
