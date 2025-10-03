@@ -13,11 +13,11 @@ struct MainTabView: View {
                 }
                 .tag(0)
             
-            // Personal Gallery
-            PersonalGalleryView()
+            // Shared Calendar
+            CalendarView()
                 .tabItem {
-                    Image(systemName: "photo.on.rectangle.angled")
-                    Text("My Gallery")
+                    Image(systemName: "calendar")
+                    Text("Calendar")
                 }
                 .tag(1)
             
@@ -29,11 +29,11 @@ struct MainTabView: View {
                 }
                 .tag(2)
             
-            // Shared Calendar
-            CalendarView()
+            // Personal Gallery
+            PersonalGalleryView()
                 .tabItem {
-                    Image(systemName: "calendar")
-                    Text("Calendar")
+                    Image(systemName: "photo.on.rectangle.angled")
+                    Text("My Gallery")
                 }
                 .tag(3)
             
