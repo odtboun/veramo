@@ -1,7 +1,9 @@
 import SwiftUI
+import Observation
 
 struct MainTabView: View {
     @State private var selectedTab = 0
+    @Bindable var authVM: AuthViewModel
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -38,7 +40,7 @@ struct MainTabView: View {
                 .tag(3)
             
             // Settings
-            SettingsView()
+            SettingsView(authVM: authVM)
                 .tabItem {
                     Image(systemName: "gearshape.fill")
                     Text("Settings")
@@ -50,5 +52,5 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView()
+    MainTabView(authVM: AuthViewModel())
 }

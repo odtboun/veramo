@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		16F250752E8FD5F100FF3A0F /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 16F250742E8FD5F100FF3A0F /* Auth */; };
+		16F250772E8FD5F100FF3A0F /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 16F250762E8FD5F100FF3A0F /* Functions */; };
+		16F250792E8FD5F100FF3A0F /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 16F250782E8FD5F100FF3A0F /* PostgREST */; };
+		16F2507B2E8FD5F100FF3A0F /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 16F2507A2E8FD5F100FF3A0F /* Realtime */; };
+		16F2507D2E8FD5F100FF3A0F /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 16F2507C2E8FD5F100FF3A0F /* Storage */; };
+		16F2507F2E8FD5F100FF3A0F /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 16F2507E2E8FD5F100FF3A0F /* Supabase */; };
 		1A0000000000000000000001 /* VeramoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000002 /* VeramoApp.swift */; };
 		1A0000000000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000004 /* ContentView.swift */; };
 		1A0000000000000000000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000006 /* Assets.xcassets */; };
@@ -21,10 +27,15 @@
 		1A0000000000000000000017 /* AdaptiveButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000018 /* AdaptiveButton.swift */; };
 		1A0000000000000000000019 /* LiquidGlassButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000001A /* LiquidGlassButton.swift */; };
 		1A000000000000000000001B /* FallbackButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000001C /* FallbackButton.swift */; };
+		2B0000000000000000000001 /* SupabaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000002 /* SupabaseConfig.swift */; };
+		2B0000000000000000000003 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000004 /* SupabaseService.swift */; };
+		2B0000000000000000000005 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000006 /* AuthViewModel.swift */; };
+		2B0000000000000000000007 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000008 /* AuthView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		1A000000000000000000001D /* VeramoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VeramoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		16F250802E8FF2E400FF3A0F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		16F250812E8FF55800FF3A0F /* VeramoApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VeramoApp.entitlements; sourceTree = "<group>"; };
 		1A0000000000000000000002 /* VeramoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VeramoApp.swift; sourceTree = "<group>"; };
 		1A0000000000000000000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1A0000000000000000000006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -39,6 +50,11 @@
 		1A0000000000000000000018 /* AdaptiveButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveButton.swift; sourceTree = "<group>"; };
 		1A000000000000000000001A /* LiquidGlassButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassButton.swift; sourceTree = "<group>"; };
 		1A000000000000000000001C /* FallbackButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FallbackButton.swift; sourceTree = "<group>"; };
+		1A000000000000000000001D /* VeramoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VeramoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B0000000000000000000002 /* SupabaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseConfig.swift; sourceTree = "<group>"; };
+		2B0000000000000000000004 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		2B0000000000000000000006 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
+		2B0000000000000000000008 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,6 +62,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				16F250792E8FD5F100FF3A0F /* PostgREST in Frameworks */,
+				16F250772E8FD5F100FF3A0F /* Functions in Frameworks */,
+				16F2507F2E8FD5F100FF3A0F /* Supabase in Frameworks */,
+				16F250752E8FD5F100FF3A0F /* Auth in Frameworks */,
+				16F2507D2E8FD5F100FF3A0F /* Storage in Frameworks */,
+				16F2507B2E8FD5F100FF3A0F /* Realtime in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -55,21 +77,18 @@
 		1A000000000000000000001F /* VeramoApp */ = {
 			isa = PBXGroup;
 			children = (
+				16F250812E8FF55800FF3A0F /* VeramoApp.entitlements */,
+				16F250802E8FF2E400FF3A0F /* Info.plist */,
 				1A0000000000000000000002 /* VeramoApp.swift */,
 				1A0000000000000000000004 /* ContentView.swift */,
+				2B0000000000000000000009 /* Config */,
+				2B000000000000000000000A /* Services */,
+				2B000000000000000000000B /* ViewModels */,
 				1A0000000000000000000020 /* Views */,
 				1A0000000000000000000006 /* Assets.xcassets */,
 				1A0000000000000000000021 /* Preview Content */,
 			);
 			path = VeramoApp;
-			sourceTree = "<group>";
-		};
-		1A0000000000000000000021 /* Preview Content */ = {
-			isa = PBXGroup;
-			children = (
-				1A0000000000000000000008 /* Preview Assets.xcassets */,
-			);
-			path = "Preview Content";
 			sourceTree = "<group>";
 		};
 		1A0000000000000000000020 /* Views */ = {
@@ -82,9 +101,18 @@
 				1A0000000000000000000012 /* CalendarView.swift */,
 				1A0000000000000000000014 /* SettingsView.swift */,
 				1A0000000000000000000016 /* CropImageView.swift */,
+				2B0000000000000000000008 /* AuthView.swift */,
 				1A0000000000000000000022 /* Components */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		1A0000000000000000000021 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				1A0000000000000000000008 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
 			sourceTree = "<group>";
 		};
 		1A0000000000000000000022 /* Components */ = {
@@ -111,6 +139,30 @@
 				1A000000000000000000001F /* VeramoApp */,
 				1A0000000000000000000023 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		2B0000000000000000000009 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				2B0000000000000000000002 /* SupabaseConfig.swift */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		2B000000000000000000000A /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				2B0000000000000000000004 /* SupabaseService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		2B000000000000000000000B /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				2B0000000000000000000006 /* AuthViewModel.swift */,
+			);
+			path = ViewModels;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -157,6 +209,9 @@
 				Base,
 			);
 			mainGroup = 1A0000000000000000000024;
+			packageReferences = (
+				16F250732E8FD5F100FF3A0F /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			productRefGroup = 1A0000000000000000000023 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -195,6 +250,10 @@
 				1A0000000000000000000017 /* AdaptiveButton.swift in Sources */,
 				1A0000000000000000000019 /* LiquidGlassButton.swift in Sources */,
 				1A000000000000000000001B /* FallbackButton.swift in Sources */,
+				2B0000000000000000000001 /* SupabaseConfig.swift in Sources */,
+				2B0000000000000000000003 /* SupabaseService.swift in Sources */,
+				2B0000000000000000000005 /* AuthViewModel.swift in Sources */,
+				2B0000000000000000000007 /* AuthView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -316,11 +375,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = VeramoApp/VeramoApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"VeramoApp/Preview Content\"";
+				DEVELOPMENT_TEAM = 5TNR5YFY6S;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VeramoApp/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -344,11 +406,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = VeramoApp/VeramoApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"VeramoApp/Preview Content\"";
+				DEVELOPMENT_TEAM = 5TNR5YFY6S;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VeramoApp/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -370,15 +435,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1A000000000000000000002A /* Build configuration list for PBXProject "VeramoApp" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				1A000000000000000000002B /* Debug */,
-				1A000000000000000000002C /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		1A0000000000000000000026 /* Build configuration list for PBXNativeTarget "VeramoApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -388,7 +444,60 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		1A000000000000000000002A /* Build configuration list for PBXProject "VeramoApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A000000000000000000002B /* Debug */,
+				1A000000000000000000002C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		16F250732E8FD5F100FF3A0F /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		16F250742E8FD5F100FF3A0F /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16F250732E8FD5F100FF3A0F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		16F250762E8FD5F100FF3A0F /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16F250732E8FD5F100FF3A0F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		16F250782E8FD5F100FF3A0F /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16F250732E8FD5F100FF3A0F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		16F2507A2E8FD5F100FF3A0F /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16F250732E8FD5F100FF3A0F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		16F2507C2E8FD5F100FF3A0F /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16F250732E8FD5F100FF3A0F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		16F2507E2E8FD5F100FF3A0F /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16F250732E8FD5F100FF3A0F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1A0000000000000000000029 /* Project object */;
 }

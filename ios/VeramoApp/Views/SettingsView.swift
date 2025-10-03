@@ -1,6 +1,9 @@
 import SwiftUI
+import Observation
 
 struct SettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Bindable var authVM: AuthViewModel
     var body: some View {
         NavigationView {
             List {
@@ -102,7 +105,7 @@ struct SettingsView: View {
                 // Account Section
                 Section("Account") {
                     Button("Sign Out") {
-                        // Handle sign out
+                        Task { await authVM.signOut() }
                     }
                     .foregroundColor(.red)
                 }
@@ -140,5 +143,5 @@ struct SettingsRow: View {
 }
 
 #Preview {
-    SettingsView()
+    SettingsView(authVM: AuthViewModel())
 }
