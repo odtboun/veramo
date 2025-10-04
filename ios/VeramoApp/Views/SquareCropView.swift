@@ -10,7 +10,36 @@ struct SquareCropView: View {
     @State private var lastScale: CGFloat = 1.0
     @State private var lastOffset: CGSize = .zero
     
+    init(image: UIImage, onCrop: @escaping (UIImage) -> Void, onCancel: @escaping () -> Void) {
+        self.image = image
+        self.onCrop = onCrop
+        self.onCancel = onCancel
+        
+        // Initialize scale to fill the square
+        let imageAspectRatio = image.size.width / image.size.height
+        if imageAspectRatio > 1.0 {
+            // Image is wider - it will fit by height, so scale = 1.0 is correct
+            _scale = State(initialValue: 1.0)
+        } else {
+            // Image is taller - it will fit by width, so scale = 1.0 is correct
+            _scale = State(initialValue: 1.0)
+        }
+        _lastScale = State(initialValue: 1.0)
+    }
+    
     private let cropSize: CGFloat = 300 // Square crop size
+    
+    // Calculate initial scale to fill the square
+    private var initialScale: CGFloat {
+        let imageAspectRatio = image.size.width / image.size.height
+        if imageAspectRatio > 1.0 {
+            // Image is wider - fit by height
+            return 1.0
+        } else {
+            // Image is taller - fit by width
+            return 1.0
+        }
+    }
     
     var body: some View {
         NavigationView {
@@ -59,42 +88,9 @@ struct SquareCropView: View {
                                     
                                     DragGesture()
                                         .onChanged { value in
-                                            let newOffset = CGSize(
+                                            offset = CGSize(
                                                 width: lastOffset.width + value.translation.width,
                                                 height: lastOffset.height + value.translation.height
-                                            )
-                                            
-                                            // Calculate image size after scaling
-                                            let imageAspectRatio = image.size.width / image.size.height
-                                            let frameAspectRatio: CGFloat = 1.0 // Square frame
-                                            
-                                            let imageDisplaySize: CGSize
-                                            if imageAspectRatio > frameAspectRatio {
-                                                // Image is wider than square - fit by height
-                                                imageDisplaySize = CGSize(
-                                                    width: cropSize * imageAspectRatio,
-                                                    height: cropSize
-                                                )
-                                            } else {
-                                                // Image is taller than square - fit by width
-                                                imageDisplaySize = CGSize(
-                                                    width: cropSize,
-                                                    height: cropSize / imageAspectRatio
-                                                )
-                                            }
-                                            
-                                            let scaledImageSize = CGSize(
-                                                width: imageDisplaySize.width * scale,
-                                                height: imageDisplaySize.height * scale
-                                            )
-                                            
-                                            // Calculate max offset to keep image within bounds
-                                            let maxOffsetX = max(0, (scaledImageSize.width - cropSize) / 2)
-                                            let maxOffsetY = max(0, (scaledImageSize.height - cropSize) / 2)
-                                            
-                                            offset = CGSize(
-                                                width: max(-maxOffsetX, min(maxOffsetX, newOffset.width)),
-                                                height: max(-maxOffsetY, min(maxOffsetY, newOffset.height))
                                             )
                                         }
                                         .onEnded { value in
@@ -160,19 +156,20 @@ struct SquareCropView: View {
         print("📐 Original image size: \(image.size)")
         print("📏 Scale: \(scale), Offset: \(offset)")
         
-        // Calculate the actual crop area in the original image coordinates
         let imageSize = image.size
         let imageAspectRatio = imageSize.width / imageSize.height
         
-        // Calculate how the image is displayed in the square frame
+        // Calculate how the image is displayed in the square frame (aspectRatio: .fit)
         let displaySize: CGSize
         if imageAspectRatio > 1.0 {
-            // Image is wider than square - fit by height
+            // Image is wider - fit by height (shorter edge = square size)
             displaySize = CGSize(width: cropSize * imageAspectRatio, height: cropSize)
         } else {
-            // Image is taller than square - fit by width  
+            // Image is taller - fit by width (shorter edge = square size)
             displaySize = CGSize(width: cropSize, height: cropSize / imageAspectRatio)
         }
+        
+        print("📐 Display size: \(displaySize)")
         
         // Calculate the scaled display size
         let scaledDisplaySize = CGSize(
@@ -180,36 +177,47 @@ struct SquareCropView: View {
             height: displaySize.height * scale
         )
         
-        // Calculate the crop rectangle in the original image coordinates
+        print("📏 Scaled display size: \(scaledDisplaySize)")
+        
+        // Calculate the crop area in the original image coordinates
+        // The crop area is always cropSize x cropSize in the center of the scaled display
+        let cropCenterX = scaledDisplaySize.width / 2 + offset.width
+        let cropCenterY = scaledDisplaySize.height / 2 + offset.height
+        
+        // Convert to original image coordinates
         let scaleFactor = imageSize.width / displaySize.width
+        let cropSizeInImage = cropSize * scaleFactor
+        
         let cropRectInImage = CGRect(
-            x: (displaySize.width - cropSize) / 2 * scaleFactor - offset.width * scaleFactor,
-            y: (displaySize.height - cropSize) / 2 * scaleFactor - offset.height * scaleFactor,
-            width: cropSize * scaleFactor,
-            height: cropSize * scaleFactor
+            x: (cropCenterX - cropSize / 2) * scaleFactor,
+            y: (cropCenterY - cropSize / 2) * scaleFactor,
+            width: cropSizeInImage,
+            height: cropSizeInImage
         )
         
-        // Ensure crop rect is within image bounds
+        print("🎯 Crop rect in image: \(cropRectInImage)")
+        
+        // Clamp to image bounds
         let clampedRect = CGRect(
-            x: max(0, min(imageSize.width - cropSize * scaleFactor, cropRectInImage.minX)),
-            y: max(0, min(imageSize.height - cropSize * scaleFactor, cropRectInImage.minY)),
-            width: min(cropSize * scaleFactor, imageSize.width),
-            height: min(cropSize * scaleFactor, imageSize.height)
+            x: max(0, min(imageSize.width - cropSizeInImage, cropRectInImage.minX)),
+            y: max(0, min(imageSize.height - cropSizeInImage, cropRectInImage.minY)),
+            width: min(cropSizeInImage, imageSize.width),
+            height: min(cropSizeInImage, imageSize.height)
         )
         
-        print("🎯 Crop rect: \(clampedRect)")
+        print("🎯 Clamped crop rect: \(clampedRect)")
         
         // Perform the actual crop
         guard let cgImage = image.cgImage?.cropping(to: clampedRect) else {
             print("❌ Crop failed, using original image")
-            return image // Fallback to original if crop fails
+            return image
         }
         
         // Create the final square image
         let finalImage = UIImage(cgImage: cgImage)
         print("✅ Cropped image size: \(finalImage.size)")
         
-        // Resize to exact square size if needed
+        // Resize to exact square size
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: cropSize, height: cropSize))
         let result = renderer.image { _ in
             finalImage.draw(in: CGRect(x: 0, y: 0, width: cropSize, height: cropSize))
