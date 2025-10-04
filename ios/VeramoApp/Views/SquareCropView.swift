@@ -156,28 +156,67 @@ struct SquareCropView: View {
     }
     
     private func cropImageToSquare() -> UIImage {
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: cropSize, height: cropSize))
+        print("🔪 Starting square crop...")
+        print("📐 Original image size: \(image.size)")
+        print("📏 Scale: \(scale), Offset: \(offset)")
         
-        return renderer.image { context in
-            // Calculate the crop area based on current scale and offset
-            let imageSize = image.size
-            let scaleFactor = max(imageSize.width / cropSize, imageSize.height / cropSize) / scale
-            
-            let cropX = (imageSize.width - cropSize * scaleFactor) / 2 - offset.width * scaleFactor
-            let cropY = (imageSize.height - cropSize * scaleFactor) / 2 - offset.height * scaleFactor
-            
-            let cropRect = CGRect(
-                x: max(0, cropX),
-                y: max(0, cropY),
-                width: min(imageSize.width, cropSize * scaleFactor),
-                height: min(imageSize.height, cropSize * scaleFactor)
-            )
-            
-            if let cgImage = image.cgImage?.cropping(to: cropRect) {
-                let croppedImage = UIImage(cgImage: cgImage)
-                croppedImage.draw(in: CGRect(x: 0, y: 0, width: cropSize, height: cropSize))
-            }
+        // Calculate the actual crop area in the original image coordinates
+        let imageSize = image.size
+        let imageAspectRatio = imageSize.width / imageSize.height
+        
+        // Calculate how the image is displayed in the square frame
+        let displaySize: CGSize
+        if imageAspectRatio > 1.0 {
+            // Image is wider than square - fit by height
+            displaySize = CGSize(width: cropSize * imageAspectRatio, height: cropSize)
+        } else {
+            // Image is taller than square - fit by width  
+            displaySize = CGSize(width: cropSize, height: cropSize / imageAspectRatio)
         }
+        
+        // Calculate the scaled display size
+        let scaledDisplaySize = CGSize(
+            width: displaySize.width * scale,
+            height: displaySize.height * scale
+        )
+        
+        // Calculate the crop rectangle in the original image coordinates
+        let scaleFactor = imageSize.width / displaySize.width
+        let cropRectInImage = CGRect(
+            x: (displaySize.width - cropSize) / 2 * scaleFactor - offset.width * scaleFactor,
+            y: (displaySize.height - cropSize) / 2 * scaleFactor - offset.height * scaleFactor,
+            width: cropSize * scaleFactor,
+            height: cropSize * scaleFactor
+        )
+        
+        // Ensure crop rect is within image bounds
+        let clampedRect = CGRect(
+            x: max(0, min(imageSize.width - cropSize * scaleFactor, cropRectInImage.minX)),
+            y: max(0, min(imageSize.height - cropSize * scaleFactor, cropRectInImage.minY)),
+            width: min(cropSize * scaleFactor, imageSize.width),
+            height: min(cropSize * scaleFactor, imageSize.height)
+        )
+        
+        print("🎯 Crop rect: \(clampedRect)")
+        
+        // Perform the actual crop
+        guard let cgImage = image.cgImage?.cropping(to: clampedRect) else {
+            print("❌ Crop failed, using original image")
+            return image // Fallback to original if crop fails
+        }
+        
+        // Create the final square image
+        let finalImage = UIImage(cgImage: cgImage)
+        print("✅ Cropped image size: \(finalImage.size)")
+        
+        // Resize to exact square size if needed
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: cropSize, height: cropSize))
+        let result = renderer.image { _ in
+            finalImage.draw(in: CGRect(x: 0, y: 0, width: cropSize, height: cropSize))
+        }
+        
+        print("🎉 Final square image size: \(result.size)")
+        return result
     }
 }
 
