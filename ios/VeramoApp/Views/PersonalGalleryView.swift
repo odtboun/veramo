@@ -111,33 +111,50 @@ struct PersonalGalleryView: View {
     }
     
     private func fetchGallery() async {
+        print("🔄 Fetching gallery...")
         await MainActor.run { self.isLoading = true }
         
         do {
             let uploads = try await SupabaseService.shared.getGalleryUploads()
+            print("📸 Found \(uploads.count) uploads in database")
+            
             let signed = try await withThrowingTaskGroup(of: GalleryItem?.self) { group -> [GalleryItem] in
                 for upload in uploads {
                     group.addTask {
-                        let url = try await SupabaseService.shared.getSignedImageURL(storagePath: upload.storage_path)
-                        return GalleryItem(
-                            id: upload.id,
-                            url: URL(string: url)!,
-                            storagePath: upload.storage_path,
-                            fileName: upload.file_name,
-                            createdAt: upload.created_at
-                        )
+                        do {
+                            print("🔗 Getting signed URL for: \(upload.storage_path)")
+                            let url = try await SupabaseService.shared.getSignedImageURL(storagePath: upload.storage_path)
+                            print("✅ Signed URL created for: \(upload.storage_path)")
+                            return GalleryItem(
+                                id: upload.id,
+                                url: URL(string: url)!,
+                                storagePath: upload.storage_path,
+                                fileName: upload.file_name,
+                                createdAt: upload.created_at
+                            )
+                        } catch {
+                            print("❌ Failed to get signed URL for \(upload.storage_path): \(error)")
+                            return nil
+                        }
                     }
                 }
                 var out: [GalleryItem] = []
-                for try await v in group { if let v { out.append(v) } }
+                for try await v in group { 
+                    if let v { 
+                        out.append(v)
+                        print("✅ Added gallery item: \(v.fileName)")
+                    }
+                }
                 return out
             }
+            
+            print("📱 Gallery items ready: \(signed.count)")
             await MainActor.run { 
                 self.items = signed
                 self.isLoading = false
             }
         } catch { 
-            print("Fetch gallery failed: \(error)")
+            print("❌ Fetch gallery failed: \(error)")
             await MainActor.run { 
                 self.isLoading = false
                 self.errorMessage = "Failed to load gallery: \(error.localizedDescription)"

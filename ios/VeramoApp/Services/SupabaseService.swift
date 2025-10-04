@@ -27,17 +27,20 @@ final class SupabaseService {
     func fetchCouple() async -> Couple? {
         do {
             let userId = try await currentUserId()
-            let couple: Couple? = try await client
+            print("🔍 Fetching couple for user: \(userId)")
+            
+            let couples: [Couple] = try await client
                 .from("couples")
                 .select("id, user1_id, user2_id, is_active")
                 .or("user1_id.eq.\(userId),user2_id.eq.\(userId)")
                 .eq("is_active", value: true)
-                .single()
                 .execute().value
-            return couple
-        } catch { 
-            print("Error fetching couple: \(error)")
-            return nil 
+            
+            print("📊 Found \(couples.count) couples")
+            return couples.first
+        } catch {
+            print("❌ Error fetching couple: \(error)")
+            return nil
         }
     }
 
