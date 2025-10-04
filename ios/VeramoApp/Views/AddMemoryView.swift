@@ -212,10 +212,44 @@ struct AddMemoryView: View {
         do {
             print("🗓️ Adding memory to calendar for date: \(date)")
             
-            // For now, we'll create a simple calendar entry
-            // TODO: Implement proper image upload and calendar entry creation
-            
-            print("✅ Successfully added memory to calendar for \(date)")
+            // Upload image to storage and create calendar entry
+            if let image = imageForCropping {
+                // Convert image to data
+                guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+                    print("❌ Failed to convert image to data")
+                    dismiss()
+                    return
+                }
+                
+                // Upload to Supabase Storage
+                let userId = try await SupabaseService.shared.currentUserId()
+                let fileName = "\(userId)/memory_\(UUID().uuidString).jpg"
+                
+                print("📝 Uploading image: \(fileName)")
+                try await SupabaseService.shared.client.storage
+                    .from("user-uploads")
+                    .upload(fileName, data: imageData, options: FileOptions(contentType: "image/jpeg"))
+                
+                // Create image data for calendar entry
+                let imageMetadata: [String: String] = [
+                    "storage_path": fileName,
+                    "file_name": fileName.components(separatedBy: "/").last ?? fileName,
+                    "file_size": String(imageData.count),
+                    "mime_type": "image/jpeg",
+                    "width": String(Int(image.size.width)),
+                    "height": String(Int(image.size.height))
+                ]
+                
+                // Add to calendar
+                try await SupabaseService.shared.addCalendarEntry(
+                    imageData: imageMetadata,
+                    scheduledDate: date
+                )
+                
+                print("✅ Successfully added memory to calendar for \(date)")
+            } else {
+                print("❌ No image to upload")
+            }
             
             // Post notification to refresh calendar
             NotificationCenter.default.post(name: NSNotification.Name("CalendarEntryAdded"), object: nil)

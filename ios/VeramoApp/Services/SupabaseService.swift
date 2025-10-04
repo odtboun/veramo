@@ -130,13 +130,13 @@ final class SupabaseService {
             .execute()
     }
     
-    // MARK: - Calendar Entries
-        func addCalendarEntry(imageId: UUID, scheduledDate: Date) async throws {
+        // MARK: - Calendar Entries
+        func addCalendarEntry(imageData: [String: String], scheduledDate: Date) async throws {
             print("🗓️ SupabaseService: Adding calendar entry...")
             let userId = try await currentUserId()
             print("👤 User ID: \(userId)")
             
-            let couple = try await fetchCouple()
+            let couple = await fetchCouple()
             print("💑 Couple: \(couple?.id ?? UUID())")
 
             guard let couple = couple else {
@@ -146,7 +146,7 @@ final class SupabaseService {
 
             struct NewEntry: Encodable {
                 let couple_id: UUID
-                let image_id: UUID
+                let image_data: [String: String]
                 let date: String
                 let created_by_user_id: UUID
             }
@@ -156,12 +156,12 @@ final class SupabaseService {
             let dateString = dateFormatter.string(from: scheduledDate)
             
             print("📅 Date: \(dateString)")
-            print("🖼️ Image ID: \(imageId)")
+            print("🖼️ Image Data: \(imageData)")
             print("💑 Couple ID: \(couple.id)")
 
             let newEntry = NewEntry(
                 couple_id: couple.id,
-                image_id: imageId,
+                image_data: imageData,
                 date: dateString,
                 created_by_user_id: userId
             )
@@ -174,7 +174,7 @@ final class SupabaseService {
     
         func getCalendarEntries(for date: Date) async throws -> [CalendarEntry] {
             let userId = try await currentUserId()
-            let couple = try await fetchCouple()
+            let couple = await fetchCouple()
 
             guard let couple = couple else {
                 return []
@@ -186,14 +186,14 @@ final class SupabaseService {
 
             struct CalendarEntryRow: Decodable {
                 let id: UUID
-                let image_id: UUID
+                let image_data: [String: String]
                 let created_by_user_id: UUID
                 let date: String
             }
 
             let entries: [CalendarEntryRow] = try await client
                 .from("calendar_entries")
-                .select("id, image_id, created_by_user_id, date")
+                .select("id, image_data, created_by_user_id, date")
                 .eq("couple_id", value: couple.id)
                 .eq("date", value: dateString)
                 .execute().value
@@ -201,7 +201,7 @@ final class SupabaseService {
             return entries.map { entry in
                 CalendarEntry(
                     id: entry.id,
-                    imageId: entry.image_id,
+                    imageData: entry.image_data,
                     createdByUserId: entry.created_by_user_id,
                     isFromPartner: entry.created_by_user_id != userId,
                     date: entry.date
@@ -313,13 +313,13 @@ final class SupabaseService {
     }
 }
 
-struct CalendarEntry {
-    let id: UUID
-    let imageId: UUID
-    let createdByUserId: UUID
-    let isFromPartner: Bool
-    let date: String
-}
+    struct CalendarEntry {
+        let id: UUID
+        let imageData: [String: String]
+        let createdByUserId: UUID
+        let isFromPartner: Bool
+        let date: String
+    }
 
 // MARK: - Gallery Uploads
 struct GalleryUpload: Decodable {
