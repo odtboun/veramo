@@ -157,40 +157,42 @@ final class SupabaseService {
         )).execute()
     }
     
-    func getCalendarEntries(for date: Date) async throws -> [CalendarEntry] {
-        let userId = try await currentUserId()
-        let couple = try await fetchCouple()
-        
-        guard let couple = couple else {
-            return []
+        func getCalendarEntries(for date: Date) async throws -> [CalendarEntry] {
+            let userId = try await currentUserId()
+            let couple = try await fetchCouple()
+
+            guard let couple = couple else {
+                return []
+            }
+
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let dateString = dateFormatter.string(from: date)
+
+            struct CalendarEntryRow: Decodable {
+                let id: UUID
+                let image_id: UUID
+                let created_by_user_id: UUID
+                let date: String
+            }
+
+            let entries: [CalendarEntryRow] = try await client
+                .from("calendar_entries")
+                .select("id, image_id, created_by_user_id, date")
+                .eq("couple_id", value: couple.id)
+                .eq("date", value: dateString)
+                .execute().value
+
+            return entries.map { entry in
+                CalendarEntry(
+                    id: entry.id,
+                    imageId: entry.image_id,
+                    createdByUserId: entry.created_by_user_id,
+                    isFromPartner: entry.created_by_user_id != userId,
+                    date: entry.date
+                )
+            }
         }
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let dateString = dateFormatter.string(from: date)
-        
-        struct CalendarEntryRow: Decodable {
-            let id: UUID
-            let image_id: UUID
-            let created_by_user_id: UUID
-        }
-        
-        let entries: [CalendarEntryRow] = try await client
-            .from("calendar_entries")
-            .select("id, image_id, created_by_user_id")
-            .eq("couple_id", value: couple.id)
-            .eq("date", value: dateString)
-            .execute().value
-        
-        return entries.map { entry in
-            CalendarEntry(
-                id: entry.id,
-                imageId: entry.image_id,
-                createdByUserId: entry.created_by_user_id,
-                isFromPartner: entry.created_by_user_id != userId
-            )
-        }
-    }
     
     // MARK: - Gallery Management
     func getSignedUploadURL(fileName: String, mimeType: String) async throws -> CustomSignedUploadURL {
@@ -296,6 +298,7 @@ struct CalendarEntry {
     let imageId: UUID
     let createdByUserId: UUID
     let isFromPartner: Bool
+    let date: String
 }
 
 // MARK: - Gallery Uploads
