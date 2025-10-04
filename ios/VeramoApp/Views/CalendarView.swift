@@ -10,6 +10,7 @@ struct CalendarView: View {
     @State private var isLoading = false
     @State private var showingAddMemory = false
     @State private var lastCacheMonth: String? = nil
+    @State private var lastUpdateTimestamp: Date? = nil
     
     // Static cache shared across all instances
     static var cachedImages: [String: UIImage] = [:]
@@ -108,7 +109,10 @@ struct CalendarView: View {
                     AddMemoryView()
                 }
                 .onAppear {
-                    Task { await loadCalendarData() }
+                    Task { 
+                        await loadCalendarData()
+                        await checkForNewEntries()
+                    }
                 }
                 .onChange(of: currentMonth) { _, _ in
                     Task { await loadCalendarData() }
@@ -118,6 +122,9 @@ struct CalendarView: View {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CalendarEntryAdded"))) { _ in
                     Task { await loadCalendarData() }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SmartRefreshRequested"))) { _ in
+                    Task { await checkForNewEntries() }
                 }
             } else {
                 // Show gate when not paired
@@ -330,8 +337,136 @@ struct CalendarView: View {
                 }
             } catch {
                 print("❌ Failed to cache image \(storagePath): \(error)")
-            }
         }
+    }
+    
+    private func checkForNewEntries() async {
+        do {
+            let couple = await SupabaseService.shared.fetchCouple()
+            guard let couple = couple else { return }
+            
+            // Define JSONValue and CalendarEntryRow for this function
+            enum JSONValue: Decodable {
+                case string(String)
+                case number(Double)
+                case object([String: JSONValue])
+                case array([JSONValue])
+                case bool(Bool)
+                case null
+                
+                init(from decoder: Decoder) throws {
+                    let container = try decoder.singleValueContainer()
+                    if container.decodeNil() {
+                        self = .null
+                    } else if let string = try? container.decode(String.self) {
+                        self = .string(string)
+                    } else if let number = try? container.decode(Double.self) {
+                        self = .number(number)
+                    } else if let bool = try? container.decode(Bool.self) {
+                        self = .bool(bool)
+                    } else if let array = try? container.decode([JSONValue].self) {
+                        self = .array(array)
+                    } else if let object = try? container.decode([String: JSONValue].self) {
+                        self = .object(object)
+                    } else {
+                        throw DecodingError.typeMismatch(JSONValue.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid JSON value"))
+                    }
+                }
+            }
+            
+            struct CalendarEntryRow: Decodable {
+                let id: UUID
+                let date: Date
+                let created_at: Date
+                let image_data: JSONValue
+                let created_by_user_id: UUID
+            }
+            
+            // Query for entries newer than our last update timestamp
+            let query = SupabaseService.shared.client
+                .from("calendar_entries")
+                .select("id, date, created_at, image_data, created_by_user_id")
+                .eq("couple_id", value: couple.id)
+                .order("created_at", ascending: false)
+            
+            // For now, just get the latest entries and let the app handle deduplication
+            // TODO: Add proper timestamp filtering when Supabase client supports it
+            
+            let response: [CalendarEntryRow] = try await query.execute().value
+            
+            if !response.isEmpty {
+                print("🔄 Found \(response.count) new entries since last update")
+                
+                // Convert to CalendarEntry objects
+                var newEntries: [CalendarEntry] = []
+                let currentUserId = try await SupabaseService.shared.client.auth.session.user.id
+                
+                for entry in response {
+                    // Convert JSONValue to [String: String]
+                    let imageData: [String: String]
+                    if case .object(let dict) = entry.image_data {
+                        imageData = dict.compactMapValues { value in
+                            if case .string(let str) = value {
+                                return str
+                            } else if case .number(let num) = value {
+                                return String(num)
+                            }
+                            return nil
+                        }
+                    } else {
+                        continue
+                    }
+                    
+                    // Convert date to string
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyy-MM-dd"
+                    let dateString = dateFormatter.string(from: entry.date)
+                    
+                    // Determine if entry is from partner
+                    let isFromPartner = entry.created_by_user_id != currentUserId
+                    
+                    let calendarEntry = CalendarEntry(
+                        id: entry.id,
+                        imageData: imageData,
+                        createdByUserId: entry.created_by_user_id,
+                        isFromPartner: isFromPartner,
+                        date: dateString
+                    )
+                    newEntries.append(calendarEntry)
+                }
+                
+                // Merge new entries with existing ones
+                await MainActor.run {
+                    for entry in newEntries {
+                        // Convert string date back to Date for dateKey function
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.dateFormat = "yyyy-MM-dd"
+                        if let date = dateFormatter.date(from: entry.date) {
+                            let dateKey = self.dateKey(for: date)
+                            if self.calendarEntries[dateKey] == nil {
+                                self.calendarEntries[dateKey] = []
+                            }
+                            self.calendarEntries[dateKey]?.append(entry)
+                        }
+                    }
+                    
+                    // Update timestamp to the latest entry
+                    if let latestEntry = newEntries.first {
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.dateFormat = "yyyy-MM-dd"
+                        if let date = dateFormatter.date(from: latestEntry.date) {
+                            self.lastUpdateTimestamp = date
+                        }
+                    }
+                }
+                
+                // Pre-cache new images
+                await preCacheImages(for: newEntries)
+            }
+        } catch {
+            print("❌ Failed to check for new entries: \(error)")
+        }
+    }
     
     private let monthFormatter: DateFormatter = {
         let formatter = DateFormatter()

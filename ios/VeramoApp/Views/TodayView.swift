@@ -6,6 +6,7 @@ struct TodayView: View {
     @State private var hasMemory = false
     @State private var showingAddMemory = false
     @State private var lastStreakCheckDate: String? = nil
+    @State private var lastUpdateTimestamp: Date? = nil
     
     var body: some View {
         NavigationView {
@@ -166,10 +167,14 @@ struct TodayView: View {
                     Task { 
                         await loadTodaysMemory()
                         await checkStreakIfNeeded()
+                        await checkForNewEntries()
                     }
                 }
             .sheet(isPresented: $showingAddMemory) {
                 AddMemoryView()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SmartRefreshRequested"))) { _ in
+                Task { await checkForNewEntries() }
             }
         }
     }
@@ -448,7 +453,7 @@ struct TodayView: View {
             
             var streak = 0
             let calendar = Calendar.current
-            var currentDate = Date()
+            let currentDate = Date()
             
             // Check up to 365 days back (reasonable limit)
             let dateFormatter = DateFormatter()
@@ -505,6 +510,78 @@ struct TodayView: View {
         
         print("📊 Date \(date): \(entries.count) entries, User IDs: \(userIds), Both uploaded: \(bothUploaded)")
         return bothUploaded
+    }
+    
+    private func checkForNewEntries() async {
+        do {
+            let couple = await SupabaseService.shared.fetchCouple()
+            guard let couple = couple else { return }
+            
+            // Define JSONValue and CalendarEntryRow for this function
+            enum JSONValue: Decodable {
+                case string(String)
+                case number(Double)
+                case object([String: JSONValue])
+                case array([JSONValue])
+                case bool(Bool)
+                case null
+                
+                init(from decoder: Decoder) throws {
+                    let container = try decoder.singleValueContainer()
+                    if container.decodeNil() {
+                        self = .null
+                    } else if let string = try? container.decode(String.self) {
+                        self = .string(string)
+                    } else if let number = try? container.decode(Double.self) {
+                        self = .number(number)
+                    } else if let bool = try? container.decode(Bool.self) {
+                        self = .bool(bool)
+                    } else if let array = try? container.decode([JSONValue].self) {
+                        self = .array(array)
+                    } else if let object = try? container.decode([String: JSONValue].self) {
+                        self = .object(object)
+                    } else {
+                        throw DecodingError.typeMismatch(JSONValue.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid JSON value"))
+                    }
+                }
+            }
+            
+            struct CalendarEntryRow: Decodable {
+                let id: UUID
+                let date: Date
+                let created_at: Date
+                let image_data: JSONValue
+                let created_by_user_id: UUID
+            }
+            
+            // Query for entries newer than our last update timestamp
+            let query = SupabaseService.shared.client
+                .from("calendar_entries")
+                .select("id, date, created_at, image_data, created_by_user_id")
+                .eq("couple_id", value: couple.id)
+                .order("created_at", ascending: false)
+            
+            // For now, just get the latest entries and let the app handle deduplication
+            // TODO: Add proper timestamp filtering when Supabase client supports it
+            
+            let response: [CalendarEntryRow] = try await query.execute().value
+            
+            if !response.isEmpty {
+                print("🔄 TodayView: Found \(response.count) new entries since last update")
+                
+                // Update timestamp to the latest entry
+                if let latestEntry = response.first {
+                    await MainActor.run {
+                        self.lastUpdateTimestamp = latestEntry.date
+                    }
+                }
+                
+                // Reload today's memory to show new entries
+                await loadTodaysMemory()
+            }
+        } catch {
+            print("❌ TodayView: Failed to check for new entries: \(error)")
+        }
     }
 }
 
