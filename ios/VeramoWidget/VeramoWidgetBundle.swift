@@ -12,7 +12,5 @@ import SwiftUI
 struct VeramoWidgetBundle: WidgetBundle {
     var body: some Widget {
         VeramoWidget()
-        VeramoWidgetControl()
-        VeramoWidgetLiveActivity()
     }
 }

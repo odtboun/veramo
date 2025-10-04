@@ -19,5 +19,14 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.widgetkit-extension</string>
+	</dict>
+	<key>AppGroups</key>
+	<array>
+		<string>group.com.omerdemirtas.veramo</string>
+	</array>
 </dict>
 </plist>

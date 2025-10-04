@@ -63,6 +63,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		167D330F2E91DDD200FCAB5B /* VeramoWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VeramoWidgetExtension.entitlements; sourceTree = "<group>"; };
 		16F250802E8FF2E400FF3A0F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		16F250812E8FF55800FF3A0F /* VeramoApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VeramoApp.entitlements; sourceTree = "<group>"; };
 		16F250822E90920B00FF3A0F /* PartnerConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PartnerConnectionView.swift; sourceTree = "<group>"; };
@@ -204,6 +205,7 @@
 		1A0000000000000000000024 = {
 			isa = PBXGroup;
 			children = (
+				167D330F2E91DDD200FCAB5B /* VeramoWidgetExtension.entitlements */,
 				1A000000000000000000001F /* VeramoApp */,
 				16F250922E91983D00FF3A0F /* VeramoWidget */,
 				16F2508D2E91983D00FF3A0F /* Frameworks */,
@@ -388,6 +390,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = VeramoWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5TNR5YFY6S;
@@ -428,6 +431,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CODE_SIGN_ENTITLEMENTS = VeramoWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5TNR5YFY6S;

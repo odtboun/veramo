@@ -65,7 +65,7 @@ For better data sharing between app and widget:
 
 You can customize the widget by modifying:
 
-- **Widget Size**: Currently set to `.systemMedium`
+- **Widget Size**: Currently set to `.systemSmall` (square format)
 - **Update Frequency**: Change the timeline policy
 - **UI Design**: Modify the `VeramoWidgetEntryView`
 - **Data Source**: Adjust the `fetchPartnerUpdate()` function

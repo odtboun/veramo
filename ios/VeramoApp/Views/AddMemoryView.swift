@@ -203,6 +203,19 @@ struct AddMemoryView: View {
                 )
                 
                 print("✅ Successfully added memory to calendar for \(date)")
+                
+                // Store data for widget
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateStyle = .medium
+                let dateString = dateFormatter.string(from: date)
+                
+                // Get signed URL for widget
+                let signedUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: fileName)
+                SharedDataManager.shared.storeLatestImageData(
+                    imageUrl: signedUrl,
+                    partnerName: "You",
+                    lastUpdateDate: dateString
+                )
             } else {
                 print("❌ No image to upload")
             }

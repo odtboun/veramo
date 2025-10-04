@@ -10,17 +10,20 @@ import SwiftUI
 
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), emoji: "😀")
+        SimpleEntry(date: Date(), partnerImage: nil, partnerName: "Partner", lastUpdateDate: "Today")
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let entry = SimpleEntry(date: Date(), emoji: "😀")
+        let entry = SimpleEntry(date: Date(), partnerImage: nil, partnerName: "Partner", lastUpdateDate: "Today")
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
+        print("🚀 Widget: getTimeline called")
         Task {
+            print("🚀 Widget: Starting fetchPartnerUpdate task")
             let entry = await fetchPartnerUpdate()
+            print("🚀 Widget: fetchPartnerUpdate completed")
             
             // Create timeline with multiple update points
             var entries: [SimpleEntry] = []
@@ -44,93 +47,42 @@ struct Provider: TimelineProvider {
             // More frequent updates: every 15 minutes
             let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date()
             let timeline = Timeline(entries: entries, policy: .after(nextUpdate))
+            print("🚀 Widget: Timeline created with \(entries.count) entries")
             completion(timeline)
         }
     }
     
     private func fetchPartnerUpdate() async -> SimpleEntry {
-        do {
-            // Check if user is logged in
-            guard let userId = await SharedSupabaseService.shared.getCurrentUser() else {
-                return SimpleEntry(
-                    date: Date(),
-                    partnerImage: nil,
-                    partnerName: "Veramo",
-                    lastUpdateDate: "Please log in to see partner's memories"
-                )
-            }
-            
-            // Fetch couple information
-            let couple = await SharedSupabaseService.shared.fetchCouple()
-            guard let couple = couple else {
-                return SimpleEntry(
-                    date: Date(),
-                    partnerImage: nil,
-                    partnerName: "Veramo",
-                    lastUpdateDate: "Connect with your partner to see memories"
-                )
-            }
-            
-            // Get partner ID
-            let partnerId = couple.user1_id == userId ? couple.user2_id : couple.user1_id
-            
-            // Get partner's latest calendar entry (not future dates)
-            let today = Date()
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            let todayString = formatter.string(from: today)
-            
-            let supabase = SharedSupabaseService.shared.client
-            let entries: [CalendarEntryRow] = try await supabase
-                .from("calendar_entries")
-                .select("id, date, created_at, image_data, created_by_user_id")
-                .eq("couple_id", value: couple.id)
-                .eq("created_by_user_id", value: partnerId)
-                .lte("date", value: todayString)
-                .order("created_at", ascending: false)
-                .limit(1)
-                .execute().value
-            
-            if let latestEntry = entries.first {
-                // Get partner's name (we'll use a placeholder for now)
-                let partnerName = "Partner"
-                
-                // Get image URL
-                var imageUrl: String? = nil
-                if case .object(let dict) = latestEntry.image_data,
-                   let storagePath = dict["storage_path"],
-                   case .string(let path) = storagePath {
-                    imageUrl = try await SharedSupabaseService.shared.getSignedImageURL(storagePath: path)
-                }
-                
-                // Format date
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "MMM d"
-                let formattedDate = dateFormatter.string(from: latestEntry.created_at)
-                
-                return SimpleEntry(
-                    date: Date(),
-                    partnerImage: imageUrl,
-                    partnerName: partnerName,
-                    lastUpdateDate: formattedDate
-                )
-            } else {
-                return SimpleEntry(
-                    date: Date(),
-                    partnerImage: nil,
-                    partnerName: "Partner",
-                    lastUpdateDate: "No memories yet"
-                )
-            }
-        } catch {
-            print("❌ Widget: Failed to fetch partner update: \(error)")
-            return SimpleEntry(
-                date: Date(),
-                partnerImage: nil,
-                partnerName: "Partner",
-                lastUpdateDate: "Error loading"
-            )
+        print("🔍 Widget: Starting fetchPartnerUpdate")
+        
+        // Read from shared App Groups data
+        let userDefaults = UserDefaults(suiteName: "group.com.omerdemirtas.veramo")
+        print("📱 Widget: UserDefaults suite: \(userDefaults != nil ? "Found" : "Nil")")
+        
+        let imageUrl = userDefaults?.string(forKey: "latestImageUrl")
+        let partnerName = userDefaults?.string(forKey: "partnerName") ?? "Partner"
+        let lastUpdateDate = userDefaults?.string(forKey: "lastUpdateDate") ?? "No updates"
+        
+        print("📱 Widget: Retrieved data - Image: \(imageUrl != nil ? "Found" : "None"), Partner: \(partnerName), Date: \(lastUpdateDate)")
+        if let imageUrl = imageUrl {
+            print("📱 Widget: Full image URL: \(imageUrl)")
+            print("📱 Widget: Testing URL validity: \(URL(string: imageUrl) != nil ? "Valid" : "Invalid")")
+        } else {
+            print("📱 Widget: No image URL found in shared data")
         }
+        
+        // Debug: List all keys in UserDefaults
+        if let userDefaults = userDefaults {
+            let allKeys = userDefaults.dictionaryRepresentation().keys
+            print("📱 Widget: All UserDefaults keys: \(Array(allKeys))")
+        }
+        
+        return SimpleEntry(
+            date: Date(),
+            partnerImage: imageUrl,
+            partnerName: partnerName,
+            lastUpdateDate: lastUpdateDate
+        )
     }
 
 //    func relevances() async -> WidgetRelevances<Void> {
@@ -149,98 +101,135 @@ struct VeramoWidgetEntryView : View {
     var entry: Provider.Entry
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text("💖")
-                    .font(.title2)
-                Text(entry.partnerName)
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
-            }
-            
-            if let imageUrl = entry.partnerImage {
-                AsyncImage(url: URL(string: imageUrl)) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.pink.opacity(0.3), Color.purple.opacity(0.3)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay(
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .tint(.white)
-                        )
-                }
-                .frame(height: 120)
-                .clipped()
-                .cornerRadius(8)
+        if let imageUrl = entry.partnerImage, let url = URL(string: imageUrl) {
+            // Try to load from local storage first
+            if let localImage = loadLocalImage(from: url) {
+                Image(uiImage: localImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
             } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(
+                // Fallback to system image if no local image
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 50))
+                    .foregroundColor(.pink)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(
                         LinearGradient(
                             colors: [Color.pink.opacity(0.3), Color.purple.opacity(0.3)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(height: 120)
-                    .overlay(
-                        VStack(spacing: 8) {
-                            Image(systemName: "heart.fill")
-                                .font(.title)
-                                .foregroundColor(.white)
-                            Text("Partner's Memory")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.white)
-                        }
+                    .scaleEffect(1.6)
+            }
+        } else {
+            // No image URL - show placeholder
+            Image(systemName: "heart.fill")
+                .font(.system(size: 50))
+                .foregroundColor(.pink)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(
+                    LinearGradient(
+                        colors: [Color.pink.opacity(0.3), Color.purple.opacity(0.3)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
+                )
+                .scaleEffect(1.6)
+        }
+    }
+    
+    private func loadLocalImage(from url: URL) -> UIImage? {
+        // Get the cached filename from UserDefaults
+        let userDefaults = UserDefaults(suiteName: "group.com.omerdemirtas.veramo")
+        let cachedFilename = userDefaults?.string(forKey: "cachedImageFilename")
+        
+        // Use shared container for cache directory
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.omerdemirtas.veramo") else {
+            print("📱 Widget: Failed to get shared container URL")
+            return nil
+        }
+        let cacheDirectory = containerURL.appendingPathComponent("widget_cache")
+        
+        // Try to use the cached filename first, fallback to URL filename
+        let filename = cachedFilename ?? url.lastPathComponent
+        let localURL = cacheDirectory.appendingPathComponent(filename)
+        
+        print("📱 Widget: Looking for local image at: \(localURL.path)")
+        print("📱 Widget: Using filename: \(filename)")
+        print("📱 Widget: File exists: \(FileManager.default.fileExists(atPath: localURL.path))")
+        
+        guard let data = try? Data(contentsOf: localURL) else { 
+            print("📱 Widget: Failed to load local image data, trying to download directly...")
+            // Fallback: try to download the image directly
+            return downloadImageDirectly(from: url)
+        }
+        
+        guard let image = UIImage(data: data) else {
+            print("📱 Widget: Failed to create UIImage from data")
+            return nil
+        }
+        
+        print("📱 Widget: Successfully loaded local image")
+        return image
+    }
+    
+    private func downloadImageDirectly(from url: URL) -> UIImage? {
+        print("📱 Widget: Downloading image directly from: \(url.absoluteString)")
+        
+        // Use a semaphore to make this synchronous
+        var result: UIImage? = nil
+        let semaphore = DispatchSemaphore(value: 0)
+        
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            defer { semaphore.signal() }
+            
+            if let error = error {
+                print("📱 Widget: Download error: \(error)")
+                return
             }
             
-            HStack {
-                Text("Last update:")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text(entry.lastUpdateDate)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                Spacer()
+            guard let data = data else {
+                print("📱 Widget: No data received")
+                return
             }
+            
+            result = UIImage(data: data)
+            if result != nil {
+                print("📱 Widget: Successfully downloaded and created image")
+            } else {
+                print("📱 Widget: Failed to create UIImage from downloaded data")
+            }
+        }.resume()
+        
+        // Wait for download to complete (with timeout)
+        let timeout = DispatchTime.now() + .seconds(10)
+        if semaphore.wait(timeout: timeout) == .timedOut {
+            print("📱 Widget: Download timeout")
+            return nil
         }
-        .padding()
-        .background(Color(.systemBackground))
+        
+        return result
     }
 }
 
 struct VeramoWidget: Widget {
-    let kind: String = "VeramoWidget"
+    let kind: String = "VeramoWidgetV14"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            if #available(iOS 17.0, *) {
-                VeramoWidgetEntryView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
-            } else {
-                VeramoWidgetEntryView(entry: entry)
-                    .padding()
-                    .background()
-            }
+            VeramoWidgetEntryView(entry: entry)
+                .containerBackground(.clear, for: .widget)
         }
         .configurationDisplayName("Partner's Latest Memory")
         .description("Shows your partner's most recent calendar update.")
-        .supportedFamilies([.systemMedium])
+        .supportedFamilies([.systemSmall])
     }
 }
 
-#Preview(as: .systemMedium) {
+#Preview(as: .systemSmall) {
     VeramoWidget()
 } timeline: {
     SimpleEntry(date: .now, partnerImage: nil, partnerName: "Partner", lastUpdateDate: "Today")

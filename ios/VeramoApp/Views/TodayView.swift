@@ -281,6 +281,16 @@ struct TodayView: View {
                             self.todaysImage = imageUrl
                             self.hasMemory = true
                         }
+                        
+                        // Store data for widget
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.dateStyle = .medium
+                        let todayString = dateFormatter.string(from: Date())
+                        SharedDataManager.shared.storeLatestImageData(
+                            imageUrl: imageUrl,
+                            partnerName: "Partner",
+                            lastUpdateDate: todayString
+                        )
                         return
                     }
                 }
@@ -306,6 +316,18 @@ struct TodayView: View {
                             self.todaysImage = imageUrl
                             self.hasMemory = true
                         }
+                        
+                        // Store data for widget
+                        print("📱 TodayView: About to store widget data for MY today image")
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.dateStyle = .medium
+                        let todayString = dateFormatter.string(from: Date())
+                        SharedDataManager.shared.storeLatestImageData(
+                            imageUrl: imageUrl,
+                            partnerName: "You",
+                            lastUpdateDate: todayString
+                        )
+                        print("📱 TodayView: Finished storing widget data for MY today image")
                         return
                     }
                 }
@@ -351,6 +373,16 @@ struct TodayView: View {
                             self.todaysImage = imageUrl
                             self.hasMemory = true
                         }
+                        
+                        // Store data for widget
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.dateStyle = .medium
+                        let todayString = dateFormatter.string(from: Date())
+                        SharedDataManager.shared.storeLatestImageData(
+                            imageUrl: imageUrl,
+                            partnerName: "Partner",
+                            lastUpdateDate: todayString
+                        )
                         return
                     }
                 }
@@ -395,6 +427,16 @@ struct TodayView: View {
                             self.todaysImage = imageUrl
                             self.hasMemory = true
                         }
+                        
+                        // Store data for widget
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.dateStyle = .medium
+                        let todayString = dateFormatter.string(from: Date())
+                        SharedDataManager.shared.storeLatestImageData(
+                            imageUrl: imageUrl,
+                            partnerName: "You",
+                            lastUpdateDate: todayString
+                        )
                         return
                     }
                 }
@@ -548,8 +590,8 @@ struct TodayView: View {
             
             struct CalendarEntryRow: Decodable {
                 let id: UUID
-                let date: Date
-                let created_at: Date
+                let date: String
+                let created_at: String
                 let image_data: JSONValue
                 let created_by_user_id: UUID
             }
@@ -571,8 +613,12 @@ struct TodayView: View {
                 
                 // Update timestamp to the latest entry
                 if let latestEntry = response.first {
-                    await MainActor.run {
-                        self.lastUpdateTimestamp = latestEntry.date
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"
+                    if let date = dateFormatter.date(from: latestEntry.created_at) {
+                        await MainActor.run {
+                            self.lastUpdateTimestamp = date
+                        }
                     }
                 }
                 
