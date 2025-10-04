@@ -129,29 +129,6 @@ struct TodayView: View {
                     // Action buttons
                     VStack(spacing: 12) {
                         Button(action: {
-                            // Load today's memory from database
-                            Task { await loadTodaysMemory() }
-                        }) {
-                            HStack {
-                                Image(systemName: "arrow.clockwise")
-                                Text("Refresh")
-                            }
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background {
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(.ultraThinMaterial)
-                                    .overlay {
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(.white.opacity(0.2), lineWidth: 1)
-                                    }
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        
-                        Button(action: {
                             showingAddMemory = true
                         }) {
                             HStack {
@@ -174,14 +151,6 @@ struct TodayView: View {
                 }
                 .padding()
             }
-            .background {
-                // Subtle gradient background
-                LinearGradient(
-                    colors: [.clear, .blue.opacity(0.05)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            }
             .navigationBarHidden(true)
             .onAppear {
                 Task { await loadTodaysMemory() }
@@ -193,11 +162,104 @@ struct TodayView: View {
     }
     
     private func loadTodaysMemory() async {
-        // TODO: Load today's memory from calendar entries
-        // For now, set empty state
-        await MainActor.run {
-            self.hasMemory = false
-            self.todaysImage = nil
+        do {
+            // Priority system for Today view:
+            // 1. Partner's upload for today
+            // 2. Partner's latest upload (any date)
+            // 3. Your latest upload
+            // 4. No memory
+            
+            let today = Date()
+            let userId = try await SupabaseService.shared.currentUserId()
+            
+            // Get today's entries
+            let todaysEntries = try await SupabaseService.shared.getCalendarEntries(for: today)
+            let partnerTodaysEntries = todaysEntries.filter { $0.isFromPartner }
+            
+            if let partnerTodayEntry = partnerTodaysEntries.first {
+                // Priority 1: Partner's upload for today
+                if let storagePath = partnerTodayEntry.imageData["storage_path"] as? String {
+                    let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                    await MainActor.run {
+                        self.todaysImage = imageUrl
+                        self.hasMemory = true
+                    }
+                    return
+                }
+            }
+            
+            // Priority 2: Partner's latest upload (any date)
+            let couple = await SupabaseService.shared.fetchCouple()
+            if let couple = couple {
+                // Get all partner entries
+                struct CalendarEntryRow: Decodable {
+                    let id: UUID
+                    let image_data: [String: String]
+                    let created_by_user_id: UUID
+                    let date: String
+                }
+                
+                let allEntries: [CalendarEntryRow] = try await SupabaseService.shared.client
+                    .from("calendar_entries")
+                    .select("id, image_data, created_by_user_id, date")
+                    .eq("couple_id", value: couple.id)
+                    .neq("created_by_user_id", value: userId)
+                    .order("date", ascending: false)
+                    .execute().value
+                
+                if let latestPartnerEntry = allEntries.first {
+                    if let path = latestPartnerEntry.image_data["storage_path"] {
+                        let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: path)
+                        await MainActor.run {
+                            self.todaysImage = imageUrl
+                            self.hasMemory = true
+                        }
+                        return
+                    }
+                }
+            }
+            
+            // Priority 3: Your latest upload
+            if let couple = couple {
+                struct CalendarEntryRow: Decodable {
+                    let id: UUID
+                    let image_data: [String: String]
+                    let created_by_user_id: UUID
+                    let date: String
+                }
+                
+                let myEntries: [CalendarEntryRow] = try await SupabaseService.shared.client
+                    .from("calendar_entries")
+                    .select("id, image_data, created_by_user_id, date")
+                    .eq("couple_id", value: couple.id)
+                    .eq("created_by_user_id", value: userId)
+                    .order("date", ascending: false)
+                    .execute().value
+                
+                if let myLatestEntry = myEntries.first {
+                    if let path = myLatestEntry.image_data["storage_path"] {
+                        let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: path)
+                        await MainActor.run {
+                            self.todaysImage = imageUrl
+                            self.hasMemory = true
+                        }
+                        return
+                    }
+                }
+            }
+            
+            // Priority 4: No memory
+            await MainActor.run {
+                self.hasMemory = false
+                self.todaysImage = nil
+            }
+            
+        } catch {
+            print("❌ Failed to load today's memory: \(error)")
+            await MainActor.run {
+                self.hasMemory = false
+                self.todaysImage = nil
+            }
         }
     }
 }

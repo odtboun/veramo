@@ -352,9 +352,12 @@ struct CalendarDayView: View {
         Button(action: action) {
             VStack(spacing: 4) {
                 if !entries.isEmpty {
-                    // Show first image if available
-                    if let firstEntry = entries.first {
-                        CalendarEntryThumbnail(entry: firstEntry)
+                    // Show partner's latest upload, or your own if no partner uploads
+                    let partnerEntries = entries.filter { $0.isFromPartner }
+                    let entryToShow = partnerEntries.first ?? entries.first
+                    
+                    if let entry = entryToShow {
+                        CalendarEntryThumbnail(entry: entry)
                             .frame(height: 40)
                     }
                 } else {
