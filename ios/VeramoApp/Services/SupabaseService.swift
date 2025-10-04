@@ -19,23 +19,18 @@ final class SupabaseService {
     }
     struct Profile: Decodable { let id: UUID }
 
-    func currentProfileId() async throws -> UUID {
-        let profile: Profile = try await client
-            .from("profiles")
-            .select("id")
-            .eq("email", value: try await client.auth.session.user.email ?? "")
-            .single()
-            .execute().value
-        return profile.id
+    func currentUserId() async throws -> UUID {
+        let session = try await client.auth.session
+        return session.user.id
     }
 
     func fetchCouple() async -> Couple? {
         do {
-            let profileId = try await currentProfileId()
+            let userId = try await currentUserId()
             let couple: Couple? = try await client
                 .from("couples")
                 .select("id, user1_id, user2_id, is_active")
-                .or("user1_id.eq.\(profileId),user2_id.eq.\(profileId)")
+                .or("user1_id.eq.\(userId),user2_id.eq.\(userId)")
                 .eq("is_active", value: true)
                 .single()
                 .execute().value
@@ -65,16 +60,16 @@ final class SupabaseService {
             if existing.isEmpty { break }
         } while attempts < 10
         
-        let profileId = try await currentProfileId()
+        let userId = try await currentUserId()
         struct NewCode: Encodable { 
             let code: String
-            let inviter_profile_id: UUID
+            let inviter_user_id: UUID
             let expires_at: String
         }
         let expiresAt = ISO8601DateFormatter().string(from: Date().addingTimeInterval(3600))
         _ = try await client.from("pairing_codes").insert(NewCode(
             code: code, 
-            inviter_profile_id: profileId,
+            inviter_user_id: userId,
             expires_at: expiresAt
         )).execute()
         return code
@@ -82,17 +77,22 @@ final class SupabaseService {
 
     func joinWithCode(_ code: String) async throws {
         struct CodeRow: Decodable { 
-            let inviter_profile_id: UUID
+            let inviter_user_id: UUID
         }
         let found: CodeRow = try await client
             .from("pairing_codes")
-            .select("inviter_profile_id")
+            .select("inviter_user_id")
             .eq("code", value: code)
             .single()
             .execute().value
 
-        let myProfileId = try await currentProfileId()
-        let partnerProfileId = found.inviter_profile_id
+        let myUserId = try await currentUserId()
+        let partnerUserId = found.inviter_user_id
+        
+        // Check if trying to connect with yourself
+        if myUserId == partnerUserId {
+            throw NSError(domain: "SelfConnection", code: 1, userInfo: [NSLocalizedDescriptionKey: "It's nice to love yourself, but you can't connect with your own code! 😊"])
+        }
 
         // Create new couple
         struct NewCouple: Encodable { 
@@ -101,15 +101,15 @@ final class SupabaseService {
             let is_active: Bool
         }
         _ = try await client.from("couples").insert(NewCouple(
-            user1_id: partnerProfileId,
-            user2_id: myProfileId,
+            user1_id: partnerUserId,
+            user2_id: myUserId,
             is_active: true
         )).execute()
         
         // Mark code as redeemed
         _ = try await client.from("pairing_codes")
             .update([
-                "redeemed_by_profile_id": myProfileId.uuidString,
+                "redeemed_by_user_id": myUserId.uuidString,
                 "redeemed_at": ISO8601DateFormatter().string(from: Date())
             ])
             .eq("code", value: code)
@@ -117,19 +117,19 @@ final class SupabaseService {
     }
 
     func removePartner() async throws {
-        let profileId = try await currentProfileId()
+        let userId = try await currentUserId()
         
         // Mark couple as inactive (soft delete)
         _ = try await client.from("couples")
             .update(["is_active": false])
-            .or("user1_id.eq.\(profileId),user2_id.eq.\(profileId)")
+            .or("user1_id.eq.\(userId),user2_id.eq.\(userId)")
             .eq("is_active", value: true)
             .execute()
     }
     
     // MARK: - Calendar Entries
     func addCalendarEntry(imageId: UUID, scheduledDate: Date) async throws {
-        let profileId = try await currentProfileId()
+        let userId = try await currentUserId()
         let couple = try await fetchCouple()
         
         guard let couple = couple else {
@@ -150,12 +150,12 @@ final class SupabaseService {
             couple_id: couple.id,
             image_id: imageId,
             date: dateFormatter.string(from: scheduledDate),
-            created_by_user_id: profileId
+            created_by_user_id: userId
         )).execute()
     }
     
     func getCalendarEntries(for date: Date) async throws -> [CalendarEntry] {
-        let profileId = try await currentProfileId()
+        let userId = try await currentUserId()
         let couple = try await fetchCouple()
         
         guard let couple = couple else {
@@ -184,7 +184,7 @@ final class SupabaseService {
                 id: entry.id,
                 imageId: entry.image_id,
                 createdByUserId: entry.created_by_user_id,
-                isFromPartner: entry.created_by_user_id != profileId
+                isFromPartner: entry.created_by_user_id != userId
             )
         }
     }
