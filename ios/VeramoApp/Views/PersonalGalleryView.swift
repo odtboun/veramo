@@ -166,23 +166,22 @@ struct PersonalGalleryView: View {
             }
             print("✅ Image created: \(image.size.width)x\(image.size.height)")
             
-            let fileName = "\(UUID().uuidString).jpg"
+            let userId = try await SupabaseService.shared.currentUserId()
+            let fileName = "\(userId)/\(UUID().uuidString).jpg"
             print("📝 File name: \(fileName)")
             
-            print("🔑 Getting signed upload URL...")
-            let signedURL = try await SupabaseService.shared.getSignedUploadURL(fileName: fileName, mimeType: "image/jpeg")
-            print("✅ Signed URL received: \(signedURL.signedURL)")
-            
-            // Upload to storage
-            print("☁️ Uploading to Supabase Storage...")
-            try await SupabaseService.shared.uploadImageToStorage(data: data, signedURL: signedURL.signedURL)
+            // Upload directly to Supabase Storage
+            print("☁️ Uploading directly to Supabase Storage...")
+            try await SupabaseService.shared.client.storage
+                .from("user-uploads")
+                .upload(fileName, data: data, options: FileOptions(contentType: "image/jpeg"))
             print("✅ Upload to storage successful")
             
             // Save to database
             print("💾 Saving to database...")
             try await SupabaseService.shared.saveGalleryUpload(
-                storagePath: signedURL.path,
-                fileName: fileName,
+                storagePath: fileName,
+                fileName: fileName.components(separatedBy: "/").last ?? fileName,
                 fileSize: Int64(data.count),
                 mimeType: "image/jpeg",
                 width: Int(image.size.width),
