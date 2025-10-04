@@ -21,15 +21,25 @@ struct Provider: TimelineProvider {
     
     private func fetchPartnerUpdate() async -> SimpleEntry {
         do {
-            // Get current user session
-            let supabase = SharedSupabaseService.shared.client
-            let session = try await supabase.auth.session
-            let userId = session.user.id
+            // Check if user is logged in
+            guard let userId = await SharedSupabaseService.shared.getCurrentUser() else {
+                return SimpleEntry(
+                    date: Date(),
+                    partnerImage: nil,
+                    partnerName: "Veramo",
+                    lastUpdateDate: "Please log in to see partner's memories"
+                )
+            }
             
             // Fetch couple information
             let couple = await SharedSupabaseService.shared.fetchCouple()
             guard let couple = couple else {
-                return SimpleEntry(date: Date(), partnerImage: nil, partnerName: "No Partner", lastUpdateDate: "Not Connected")
+                return SimpleEntry(
+                    date: Date(),
+                    partnerImage: nil,
+                    partnerName: "Veramo",
+                    lastUpdateDate: "Connect with your partner to see memories"
+                )
             }
             
             // Get partner ID
@@ -79,7 +89,7 @@ struct Provider: TimelineProvider {
                     date: Date(),
                     partnerImage: nil,
                     partnerName: "Partner",
-                    lastUpdateDate: "No updates yet"
+                    lastUpdateDate: "No memories yet"
                 )
             }
         } catch {
@@ -122,10 +132,17 @@ struct VeramoWidgetEntryView : View {
                         .aspectRatio(contentMode: .fill)
                 } placeholder: {
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.3))
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.pink.opacity(0.3), Color.purple.opacity(0.3)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
                         .overlay(
                             ProgressView()
                                 .scaleEffect(0.8)
+                                .tint(.white)
                         )
                 }
                 .frame(height: 120)
@@ -133,16 +150,23 @@ struct VeramoWidgetEntryView : View {
                 .cornerRadius(8)
             } else {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.3))
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.pink.opacity(0.3), Color.purple.opacity(0.3)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .frame(height: 120)
                     .overlay(
-                        VStack {
-                            Image(systemName: "photo")
-                                .font(.title2)
-                                .foregroundColor(.gray)
-                            Text("No image")
+                        VStack(spacing: 8) {
+                            Image(systemName: "heart.fill")
+                                .font(.title)
+                                .foregroundColor(.white)
+                            Text("Partner's Memory")
                                 .font(.caption)
-                                .foregroundColor(.gray)
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
                         }
                     )
             }

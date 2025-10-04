@@ -7,10 +7,22 @@ class SharedSupabaseService {
     private let client: SupabaseClient
     
     private init() {
+        // Use the same Supabase configuration as the main app
         let supabaseURL = URL(string: "https://nywdksjdepnyjdnshrhf.supabase.co")!
         let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55d2Rrc2pkZXBueWpkbnNocmhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU5NzQ4NzQsImV4cCI6MjA1MTU1MDg3NH0.8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q"
         
         self.client = SupabaseClient(supabaseURL: supabaseURL, supabaseKey: supabaseKey)
+    }
+    
+    // Get the current user session (shared with main app)
+    func getCurrentUser() async -> UUID? {
+        do {
+            let session = try await client.auth.session
+            return session.user.id
+        } catch {
+            print("❌ Widget: No user session found")
+            return nil
+        }
     }
     
     func getSignedImageURL(storagePath: String) async throws -> String {
