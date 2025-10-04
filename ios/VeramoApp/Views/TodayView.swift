@@ -213,6 +213,11 @@ struct TodayView: View {
             let userId = try await SupabaseService.shared.currentUserId()
             print("👤 User ID: \(userId)")
             
+            // Format today's date for database queries
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let todayString = dateFormatter.string(from: today)
+            
             // Get today's entries
             let todaysEntries = try await SupabaseService.shared.getCalendarEntries(for: today)
             let partnerTodaysEntries = todaysEntries.filter { $0.isFromPartner }
@@ -244,11 +249,13 @@ struct TodayView: View {
                     let date: String
                 }
                 
+                // Only get entries from today or earlier
                 let allEntries: [CalendarEntryRow] = try await SupabaseService.shared.client
                     .from("calendar_entries")
                     .select("id, image_data, created_by_user_id, date")
                     .eq("couple_id", value: couple.id)
                     .neq("created_by_user_id", value: userId)
+                    .lte("date", value: todayString)
                     .order("date", ascending: false)
                     .execute().value
                 
@@ -291,6 +298,7 @@ struct TodayView: View {
                     .select("id, image_data, created_by_user_id, date")
                     .eq("couple_id", value: couple.id)
                     .eq("created_by_user_id", value: userId)
+                    .lte("date", value: todayString)
                     .order("date", ascending: false)
                     .execute().value
                 
