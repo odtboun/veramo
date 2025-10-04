@@ -218,45 +218,99 @@ struct TodayView: View {
             dateFormatter.dateFormat = "yyyy-MM-dd"
             let todayString = dateFormatter.string(from: today)
             
-            // Get today's entries
-            let todaysEntries = try await SupabaseService.shared.getCalendarEntries(for: today)
-            let partnerTodaysEntries = todaysEntries.filter { $0.isFromPartner }
-            print("📅 Today's entries: \(todaysEntries.count), Partner entries: \(partnerTodaysEntries.count)")
-            
-            if let partnerTodayEntry = partnerTodaysEntries.first {
-                // Priority 1: Partner's upload for today
-                print("🎯 Found partner's today entry: \(partnerTodayEntry.imageData)")
-                if let storagePath = partnerTodayEntry.imageData["storage_path"] as? String {
-                    let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
-                    print("✅ Partner's today image URL: \(imageUrl)")
-                    await MainActor.run {
-                        self.todaysImage = imageUrl
-                        self.hasMemory = true
-                    }
-                    return
-                }
-            }
-            
-            // Priority 2: Partner's latest upload (any date)
+            // Get today's entries - we need to query directly to get proper ordering
             let couple = await SupabaseService.shared.fetchCouple()
             print("💑 Couple: \(couple?.id ?? UUID())")
+            
             if let couple = couple {
-                // Get all partner entries
+                // Get today's entries sorted by creation time (most recent first)
                 struct CalendarEntryRow: Decodable {
                     let id: UUID
                     let image_data: JSONValue
                     let created_by_user_id: UUID
                     let date: String
+                    let created_at: String
                 }
                 
-                // Only get entries from today or earlier
+                let todaysEntries: [CalendarEntryRow] = try await SupabaseService.shared.client
+                    .from("calendar_entries")
+                    .select("id, image_data, created_by_user_id, date, created_at")
+                    .eq("couple_id", value: couple.id)
+                    .eq("date", value: todayString)
+                    .order("created_at", ascending: false)
+                    .execute().value
+                
+                let partnerTodaysEntries = todaysEntries.filter { $0.created_by_user_id != userId }
+                print("📅 Today's entries: \(todaysEntries.count), Partner entries: \(partnerTodaysEntries.count)")
+                
+                if let partnerTodayEntry = partnerTodaysEntries.first {
+                    // Priority 1: Partner's most recent upload for today
+                    print("🎯 Found partner's today entry: \(partnerTodayEntry.image_data)")
+                    
+                    // Convert image_data to [String: String] format
+                    let imageData: [String: String]
+                    switch partnerTodayEntry.image_data {
+                    case .object(let dict):
+                        imageData = dict.mapValues { $0.stringValue }
+                    default:
+                        imageData = [:]
+                    }
+                    
+                    if let storagePath = imageData["storage_path"] {
+                        let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                        print("✅ Partner's today image URL: \(imageUrl)")
+                        await MainActor.run {
+                            self.todaysImage = imageUrl
+                            self.hasMemory = true
+                        }
+                        return
+                    }
+                }
+                
+                // Priority 2: Your most recent upload for today
+                let myTodaysEntries = todaysEntries.filter { $0.created_by_user_id == userId }
+                if let myTodayEntry = myTodaysEntries.first {
+                    print("🎯 Found my today entry: \(myTodayEntry.image_data)")
+                    
+                    // Convert image_data to [String: String] format
+                    let imageData: [String: String]
+                    switch myTodayEntry.image_data {
+                    case .object(let dict):
+                        imageData = dict.mapValues { $0.stringValue }
+                    default:
+                        imageData = [:]
+                    }
+                    
+                    if let storagePath = imageData["storage_path"] {
+                        let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                        print("✅ My today image URL: \(imageUrl)")
+                        await MainActor.run {
+                            self.todaysImage = imageUrl
+                            self.hasMemory = true
+                        }
+                        return
+                    }
+                }
+            }
+            
+            // Priority 3: Partner's latest upload (any date, today or earlier)
+            if let couple = couple {
+                // Get all partner entries from today or earlier, sorted by creation time
+                struct CalendarEntryRow: Decodable {
+                    let id: UUID
+                    let image_data: JSONValue
+                    let created_by_user_id: UUID
+                    let date: String
+                    let created_at: String
+                }
+                
                 let allEntries: [CalendarEntryRow] = try await SupabaseService.shared.client
                     .from("calendar_entries")
-                    .select("id, image_data, created_by_user_id, date")
+                    .select("id, image_data, created_by_user_id, date, created_at")
                     .eq("couple_id", value: couple.id)
                     .neq("created_by_user_id", value: userId)
                     .lte("date", value: todayString)
-                    .order("date", ascending: false)
+                    .order("created_at", ascending: false)
                     .execute().value
                 
                 print("📊 Partner entries found: \(allEntries.count)")
@@ -284,22 +338,23 @@ struct TodayView: View {
                 }
             }
             
-            // Priority 3: Your latest upload
+            // Priority 4: Your latest upload (any date, today or earlier)
             if let couple = couple {
                 struct CalendarEntryRow: Decodable {
                     let id: UUID
                     let image_data: JSONValue
                     let created_by_user_id: UUID
                     let date: String
+                    let created_at: String
                 }
                 
                 let myEntries: [CalendarEntryRow] = try await SupabaseService.shared.client
                     .from("calendar_entries")
-                    .select("id, image_data, created_by_user_id, date")
+                    .select("id, image_data, created_by_user_id, date, created_at")
                     .eq("couple_id", value: couple.id)
                     .eq("created_by_user_id", value: userId)
                     .lte("date", value: todayString)
-                    .order("date", ascending: false)
+                    .order("created_at", ascending: false)
                     .execute().value
                 
                 print("📊 My entries found: \(myEntries.count)")
