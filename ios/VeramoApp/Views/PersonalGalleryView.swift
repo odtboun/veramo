@@ -19,69 +19,71 @@ struct PersonalGalleryView: View {
     
     var body: some View {
         NavigationView {
-            if isLoading {
-                VStack(spacing: 20) {
-                    ProgressView()
-                        .scaleEffect(1.2)
-                    Text("Loading your gallery...")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if items.isEmpty {
-                VStack(spacing: 20) {
-                    Image(systemName: "photo.on.rectangle.angled")
-                        .font(.system(size: 60))
-                        .foregroundColor(.secondary)
-                    
-                    VStack(spacing: 8) {
-                        Text("Your Gallery is Empty")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        
-                        Text("Tap the + button to add your first photo")
+            Group {
+                if isLoading {
+                    VStack(spacing: 20) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        Text("Loading your gallery...")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
                     }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding()
-            } else {
-                ScrollView {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
-                        ForEach(items) { item in
-                            AsyncImage(url: item.url) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(1, contentMode: .fit)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                            } placeholder: {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(.ultraThinMaterial)
-                                    .aspectRatio(1, contentMode: .fit)
-                                    .overlay {
-                                        ProgressView()
-                                            .scaleEffect(0.8)
-                                    }
-                            }
-                            .onTapGesture {
-                                selected = item
-                                showingCropView = true
-                            }
-                            .contextMenu {
-                                Button("Share to Calendar") {
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if items.isEmpty {
+                    VStack(spacing: 20) {
+                        Image(systemName: "photo.on.rectangle.angled")
+                            .font(.system(size: 60))
+                            .foregroundColor(.secondary)
+                        
+                        VStack(spacing: 8) {
+                            Text("Your Gallery is Empty")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            
+                            Text("Tap the + button to add your first photo")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding()
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+                            ForEach(items) { item in
+                                AsyncImage(url: item.url) { image in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(1, contentMode: .fit)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                } placeholder: {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(.ultraThinMaterial)
+                                        .aspectRatio(1, contentMode: .fit)
+                                        .overlay {
+                                            ProgressView()
+                                                .scaleEffect(0.8)
+                                        }
+                                }
+                                .onTapGesture {
                                     selected = item
                                     showingCropView = true
                                 }
-                                
-                                Button("Delete", role: .destructive) {
-                                    Task { await deleteImage(item) }
+                                .contextMenu {
+                                    Button("Share to Calendar") {
+                                        selected = item
+                                        showingCropView = true
+                                    }
+                                    
+                                    Button("Delete", role: .destructive) {
+                                        Task { await deleteImage(item) }
+                                    }
                                 }
                             }
                         }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
                 }
             }
             .navigationTitle("My Gallery")
