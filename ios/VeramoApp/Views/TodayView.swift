@@ -4,6 +4,7 @@ struct TodayView: View {
     @State private var todaysImage: String? = nil
     @State private var streakCount = 7
     @State private var hasMemory = false
+    @State private var showingAddMemory = false
     
     var body: some View {
         NavigationView {
@@ -151,7 +152,7 @@ struct TodayView: View {
                         .buttonStyle(.plain)
                         
                         Button(action: {
-                            // Add new memory
+                            showingAddMemory = true
                         }) {
                             HStack {
                                 Image(systemName: "plus")
@@ -184,6 +185,9 @@ struct TodayView: View {
             .navigationBarHidden(true)
             .onAppear {
                 Task { await loadTodaysMemory() }
+            }
+            .sheet(isPresented: $showingAddMemory) {
+                AddMemoryView()
             }
         }
     }
