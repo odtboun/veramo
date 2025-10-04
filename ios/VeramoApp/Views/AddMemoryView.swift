@@ -9,6 +9,7 @@ struct AddMemoryView: View {
     @State private var photoSelection: PhotosPickerItem?
     @State private var showingSquareCrop = false
     @State private var imageForCropping: UIImage?
+    @State private var croppedImage: UIImage?
     
     var body: some View {
         NavigationView {
@@ -29,9 +30,7 @@ struct AddMemoryView: View {
                 // Options
                 VStack(spacing: 20) {
                     // Upload from Device
-                    Button(action: {
-                        // This will be handled by PhotosPicker
-                    }) {
+                    PhotosPicker(selection: $photoSelection, matching: .images) {
                         HStack(spacing: 16) {
                             Image(systemName: "photo.on.rectangle.angled")
                                 .font(.title2)
@@ -77,7 +76,7 @@ struct AddMemoryView: View {
                                 .frame(width: 40)
                             
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("AI Generate")
+                                Text("Generate with AI")
                                     .font(.headline)
                                     .foregroundColor(.primary)
                                 
@@ -109,50 +108,6 @@ struct AddMemoryView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(true)
-                    
-                    // Edit Image (Coming Soon)
-                    Button(action: {
-                        // TODO: Implement image editing
-                    }) {
-                        HStack(spacing: 16) {
-                            Image(systemName: "paintbrush")
-                                .font(.title2)
-                                .foregroundColor(.orange)
-                                .frame(width: 40)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Edit Image")
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                
-                                Text("Edit an existing photo")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Spacer()
-                            
-                            HStack(spacing: 4) {
-                                Text("Soon")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .padding()
-                        .background {
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(.ultraThinMaterial)
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(.orange.opacity(0.2), lineWidth: 1)
-                                }
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(true)
                 }
                 .padding(.horizontal)
                 
@@ -166,7 +121,6 @@ struct AddMemoryView: View {
                 }
             }
         }
-        .photosPicker(isPresented: .constant(false), selection: $photoSelection, matching: .images)
         .onChange(of: photoSelection) { _, newValue in
             guard let newValue else { return }
             Task { await handlePhotoSelection(newValue) }
@@ -176,6 +130,7 @@ struct AddMemoryView: View {
                 SquareCropView(
                     image: image,
                     onCrop: { cropped in
+                        croppedImage = cropped
                         showingSquareCrop = false
                         showingDatePicker = true
                     },
@@ -214,7 +169,7 @@ struct AddMemoryView: View {
             print("🗓️ Adding memory to calendar for date: \(date)")
             
             // Upload image to storage and create calendar entry
-            if let image = imageForCropping {
+            if let image = croppedImage {
                 // Convert image to data
                 guard let imageData = image.jpegData(compressionQuality: 0.8) else {
                     print("❌ Failed to convert image to data")
