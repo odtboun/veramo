@@ -373,7 +373,9 @@ struct ImagePreviewView: View {
     let item: PersonalGalleryView.GalleryItem
     let onDismiss: () -> Void
     @State private var showingCalendarPicker = false
+    @State private var showingSquareCrop = false
     @State private var selectedDate = Date()
+    @State private var croppedImage: UIImage?
     
     var body: some View {
         NavigationView {
@@ -406,7 +408,21 @@ struct ImagePreviewView: View {
                 // Action buttons
                 VStack(spacing: 16) {
                     Button(action: { 
-                        showingCalendarPicker = true
+                        if let localImage = item.localImage {
+                            croppedImage = localImage
+                            showingSquareCrop = true
+                        } else if let url = item.url {
+                            // Load image from URL for cropping
+                            Task {
+                                if let data = try? await URLSession.shared.data(from: url).0,
+                                   let image = UIImage(data: data) {
+                                    await MainActor.run {
+                                        croppedImage = image
+                                        showingSquareCrop = true
+                                    }
+                                }
+                            }
+                        }
                     }) {
                         HStack {
                             Image(systemName: "calendar")
@@ -438,6 +454,20 @@ struct ImagePreviewView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done", action: onDismiss)
                 }
+            }
+        }
+        .sheet(isPresented: $showingSquareCrop) {
+            if let image = croppedImage {
+                SquareCropView(
+                    image: image,
+                    onCrop: { cropped in
+                        showingSquareCrop = false
+                        showingCalendarPicker = true
+                    },
+                    onCancel: {
+                        showingSquareCrop = false
+                    }
+                )
             }
         }
         .sheet(isPresented: $showingCalendarPicker) {

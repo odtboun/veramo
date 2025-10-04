@@ -155,7 +155,7 @@ struct SettingsView: View {
                     .foregroundColor(.red)
                 }
             }
-            .navigationTitle("Settings")
+            .navigationBarHidden(true)
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
                 checkPartnerStatus()

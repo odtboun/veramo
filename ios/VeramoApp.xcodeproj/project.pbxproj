@@ -15,6 +15,7 @@
 		16F2507F2E8FD5F100FF3A0F /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 16F2507E2E8FD5F100FF3A0F /* Supabase */; };
 		16F250832E90920B00FF3A0F /* PartnerConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16F250822E90920B00FF3A0F /* PartnerConnectionView.swift */; };
 		16F250852E90A40F00FF3A0F /* veramo_icon_01.icon in Resources */ = {isa = PBXBuildFile; fileRef = 16F250842E90A40F00FF3A0F /* veramo_icon_01.icon */; };
+		16F250872E912B5800FF3A0F /* SquareCropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16F250862E912B5800FF3A0F /* SquareCropView.swift */; };
 		1A0000000000000000000001 /* VeramoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000002 /* VeramoApp.swift */; };
 		1A0000000000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000004 /* ContentView.swift */; };
 		1A0000000000000000000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000006 /* Assets.xcassets */; };
@@ -40,6 +41,7 @@
 		16F250812E8FF55800FF3A0F /* VeramoApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VeramoApp.entitlements; sourceTree = "<group>"; };
 		16F250822E90920B00FF3A0F /* PartnerConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PartnerConnectionView.swift; sourceTree = "<group>"; };
 		16F250842E90A40F00FF3A0F /* veramo_icon_01.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = veramo_icon_01.icon; sourceTree = "<group>"; };
+		16F250862E912B5800FF3A0F /* SquareCropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SquareCropView.swift; sourceTree = "<group>"; };
 		1A0000000000000000000002 /* VeramoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VeramoApp.swift; sourceTree = "<group>"; };
 		1A0000000000000000000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1A0000000000000000000006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -98,6 +100,7 @@
 		1A0000000000000000000020 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				16F250862E912B5800FF3A0F /* SquareCropView.swift */,
 				16F250822E90920B00FF3A0F /* PartnerConnectionView.swift */,
 				1A000000000000000000000A /* MainTabView.swift */,
 				1A000000000000000000000C /* TodayView.swift */,
@@ -260,6 +263,7 @@
 				2B0000000000000000000001 /* SupabaseConfig.swift in Sources */,
 				2B0000000000000000000003 /* SupabaseService.swift in Sources */,
 				16F250832E90920B00FF3A0F /* PartnerConnectionView.swift in Sources */,
+				16F250872E912B5800FF3A0F /* SquareCropView.swift in Sources */,
 				2B0000000000000000000005 /* AuthViewModel.swift in Sources */,
 				2B0000000000000000000007 /* AuthView.swift in Sources */,
 			);
