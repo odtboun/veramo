@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleIconName</key>
-	<string>AppIcon</string>
+	<string>veramo_icon_01</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
