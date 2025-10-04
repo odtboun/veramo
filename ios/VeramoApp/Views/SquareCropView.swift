@@ -152,51 +152,20 @@ struct SquareCropView: View {
     }
     
     private func cropImageToSquare() -> UIImage {
-        print("🔪 Starting square crop...")
-        print("📐 Original image size: \(image.size)")
-        print("📏 Scale: \(scale), Offset: \(offset)")
+        print("📸 Taking screenshot of square area...")
         
-        // Create a renderer that captures exactly what's visible in the square
+        // Simply create a 300x300 image by drawing the current view state
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: cropSize, height: cropSize))
         
-        return renderer.image { context in
-            // Clear the background
-            context.cgContext.clear(CGRect(x: 0, y: 0, width: cropSize, height: cropSize))
-            
-            // Calculate how the image should be drawn to match the display
-            let imageSize = image.size
-            let imageAspectRatio = imageSize.width / imageSize.height
-            
-            // Calculate the display size (same logic as SwiftUI's aspectRatio: .fit)
-            let displaySize: CGSize
-            if imageAspectRatio > 1.0 {
-                // Image is wider - fit by height
-                displaySize = CGSize(width: cropSize * imageAspectRatio, height: cropSize)
-            } else {
-                // Image is taller - fit by width
-                displaySize = CGSize(width: cropSize, height: cropSize / imageAspectRatio)
-            }
-            
-            // Apply the user's scale and offset
-            let scaledDisplaySize = CGSize(
-                width: displaySize.width * scale,
-                height: displaySize.height * scale
-            )
-            
-            // Calculate where to draw the image to match the user's view
-            let drawRect = CGRect(
-                x: (cropSize - scaledDisplaySize.width) / 2 + offset.width,
-                y: (cropSize - scaledDisplaySize.height) / 2 + offset.height,
-                width: scaledDisplaySize.width,
-                height: scaledDisplaySize.height
-            )
-            
-            print("📐 Display size: \(displaySize)")
-            print("📏 Scaled display size: \(scaledDisplaySize)")
-            print("🎯 Draw rect: \(drawRect)")
-            
-            // Draw the image exactly as it appears in the view
-            image.draw(in: drawRect)
+        return renderer.image { _ in
+            // Draw the image with the current scale and offset
+            // This matches exactly what the user sees in the square
+            image.draw(in: CGRect(
+                x: offset.width,
+                y: offset.height,
+                width: image.size.width * scale,
+                height: image.size.height * scale
+            ))
         }
     }
 }
