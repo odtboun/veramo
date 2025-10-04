@@ -1,5 +1,6 @@
 import SwiftUI
 import Supabase
+import Combine
 
 struct CalendarView: View {
     @State private var selectedDate = Date()
@@ -87,10 +88,25 @@ struct CalendarView: View {
                 }
                 .navigationTitle("Our Calendar")
                 .navigationBarTitleDisplayMode(.large)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            Task { await loadCalendarData() }
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                }
                 .onAppear {
                     Task { await loadCalendarData() }
                 }
                 .onChange(of: currentMonth) { _, _ in
+                    Task { await loadCalendarData() }
+                }
+                .refreshable {
+                    await loadCalendarData()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CalendarEntryAdded"))) { _ in
                     Task { await loadCalendarData() }
                 }
             } else {

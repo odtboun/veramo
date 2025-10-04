@@ -66,15 +66,22 @@ struct PersonalGalleryView: View {
                     }
                 }
             }
-            .navigationTitle("My Gallery")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    PhotosPicker(selection: $photoSelection, matching: .images) {
-                        HStack { Image(systemName: "plus"); Text("Add Photo") }
+                .navigationTitle("My Gallery")
+                .navigationBarTitleDisplayMode(.large)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button(action: {
+                            Task { await fetchGallery() }
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        PhotosPicker(selection: $photoSelection, matching: .images) {
+                            HStack { Image(systemName: "plus"); Text("Add Photo") }
+                        }
                     }
                 }
-            }
             .sheet(isPresented: $showingCropView) {
                 if let selected {
                     ImagePreviewView(item: selected) {
@@ -82,9 +89,12 @@ struct PersonalGalleryView: View {
                     }
                 }
             }
-            .onAppear {
-                Task { await fetchGallery() }
-            }
+                .onAppear {
+                    Task { await fetchGallery() }
+                }
+                .refreshable {
+                    await fetchGallery()
+                }
             .onChange(of: photoSelection) { _, newValue in
                 guard let newValue else { return }
                 Task { await uploadPickedPhoto(newValue) }
@@ -464,6 +474,10 @@ struct ImagePreviewView: View {
                 )
                 
                 print("✅ Successfully added to calendar for \(date)")
+                
+                // Post notification to refresh calendar
+                NotificationCenter.default.post(name: NSNotification.Name("CalendarEntryAdded"), object: nil)
+                
                 onDismiss()
             } else {
                 print("❌ No matching upload found for file_name: \(item.fileName)")
