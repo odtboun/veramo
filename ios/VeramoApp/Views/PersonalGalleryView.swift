@@ -453,12 +453,18 @@ struct ImagePreviewView: View {
         do {
             // Get the image ID from the database
             let uploads = try await SupabaseService.shared.getGalleryUploads()
+            print("🔍 Looking for upload with file_name: \(item.fileName)")
+            print("📋 Available uploads: \(uploads.map { $0.file_name })")
+            
             if let matchingUpload = uploads.first(where: { $0.file_name == item.fileName }) {
+                print("✅ Found matching upload: \(matchingUpload.id)")
                 try await SupabaseService.shared.addCalendarEntry(
                     imageId: matchingUpload.id,
                     scheduledDate: date
                 )
                 print("✅ Added to calendar for \(date)")
+            } else {
+                print("❌ No matching upload found for file_name: \(item.fileName)")
             }
             onDismiss()
         } catch {

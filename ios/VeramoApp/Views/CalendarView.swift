@@ -42,7 +42,7 @@ struct CalendarView: View {
                         ScrollView {
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
                                 // Day headers
-                                ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
+                                ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { index, day in
                                     Text(day)
                                         .font(.caption)
                                         .fontWeight(.semibold)
