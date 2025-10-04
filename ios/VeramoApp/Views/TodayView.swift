@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct TodayView: View {
-    @State private var todaysImage: String = "https://picsum.photos/400/400"
+    @State private var todaysImage: String? = nil
     @State private var streakCount = 7
+    @State private var hasMemory = false
     
     var body: some View {
         NavigationView {
@@ -35,35 +36,64 @@ struct TodayView: View {
                     }
                     .padding(.top)
                     
-                    // Today's image
+                    // Today's memory
                     VStack(spacing: 16) {
                         Text("Today's Memory")
                             .font(.title2)
                             .fontWeight(.semibold)
                         
-                        AsyncImage(url: URL(string: todaysImage)) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(1, contentMode: .fit)
-                                .clipShape(RoundedRectangle(cornerRadius: 20))
-                        } placeholder: {
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(.ultraThinMaterial)
-                                .aspectRatio(1, contentMode: .fit)
-                                .overlay {
-                                    ProgressView()
-                                        .scaleEffect(1.2)
+                        if hasMemory, let imageUrl = todaysImage {
+                            AsyncImage(url: URL(string: imageUrl)) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(1, contentMode: .fit)
+                                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                            } placeholder: {
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(.ultraThinMaterial)
+                                    .aspectRatio(1, contentMode: .fit)
+                                    .overlay {
+                                        ProgressView()
+                                            .scaleEffect(1.2)
+                                    }
+                            }
+                            .frame(maxWidth: 300)
+                            .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                        } else {
+                            // Empty state
+                            VStack(spacing: 16) {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.secondary)
+                                
+                                VStack(spacing: 8) {
+                                    Text("No Memory Today")
+                                        .font(.title3)
+                                        .fontWeight(.semibold)
+                                    
+                                    Text("Add a photo to create today's memory")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
                                 }
+                            }
+                            .frame(maxWidth: 300, maxHeight: 300)
+                            .background {
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(.ultraThinMaterial)
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(.secondary.opacity(0.3), lineWidth: 1)
+                                    }
+                            }
                         }
-                        .frame(maxWidth: 300)
-                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                     }
                     
                     // Action buttons
                     VStack(spacing: 12) {
                         Button(action: {
-                            // Refresh today's image
-                            todaysImage = "https://picsum.photos/400/400?random=\(Int.random(in: 1...1000))"
+                            // Load today's memory from database
+                            Task { await loadTodaysMemory() }
                         }) {
                             HStack {
                                 Image(systemName: "arrow.clockwise")
@@ -116,6 +146,18 @@ struct TodayView: View {
                 )
             }
             .navigationBarHidden(true)
+            .onAppear {
+                Task { await loadTodaysMemory() }
+            }
+        }
+    }
+    
+    private func loadTodaysMemory() async {
+        // TODO: Load today's memory from calendar entries
+        // For now, set empty state
+        await MainActor.run {
+            self.hasMemory = false
+            self.todaysImage = nil
         }
     }
 }

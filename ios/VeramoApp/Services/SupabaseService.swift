@@ -188,6 +188,81 @@ final class SupabaseService {
             )
         }
     }
+    
+    // MARK: - Gallery Management
+    func getSignedUploadURL(fileName: String, mimeType: String) async throws -> CustomSignedUploadURL {
+        let userId = try await currentUserId()
+        let filePath = "\(userId)/\(UUID().uuidString)_\(fileName)"
+        
+        let response = try await client.storage
+            .from("user-uploads")
+            .createSignedUploadURL(path: filePath)
+        
+        return CustomSignedUploadURL(
+            signedURL: response.signedURL.absoluteString,
+            path: response.path,
+            token: response.token
+        )
+    }
+    
+    func uploadImageToStorage(data: Data, signedURL: String) async throws {
+        var request = URLRequest(url: URL(string: signedURL)!)
+        request.httpMethod = "PUT"
+        request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+        request.httpBody = data
+        
+        let (_, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw NSError(domain: "UploadError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to upload image"])
+        }
+    }
+    
+    func saveGalleryUpload(storagePath: String, fileName: String, fileSize: Int64, mimeType: String, width: Int?, height: Int?) async throws {
+        let userId = try await currentUserId()
+        
+        struct NewUpload: Encodable {
+            let user_id: UUID
+            let storage_path: String
+            let file_name: String
+            let file_size: Int64
+            let mime_type: String
+            let width: Int?
+            let height: Int?
+        }
+        
+        _ = try await client.from("gallery_uploads").insert(NewUpload(
+            user_id: userId,
+            storage_path: storagePath,
+            file_name: fileName,
+            file_size: fileSize,
+            mime_type: mimeType,
+            width: width,
+            height: height
+        )).execute()
+    }
+    
+    func getGalleryUploads() async throws -> [GalleryUpload] {
+        let userId = try await currentUserId()
+        
+        let uploads: [GalleryUpload] = try await client
+            .from("gallery_uploads")
+            .select("*")
+            .eq("user_id", value: userId)
+            .order("created_at", ascending: false)
+            .execute().value
+        
+        return uploads
+    }
+    
+    func getSignedImageURL(storagePath: String) async throws -> String {
+        let url = try await client.storage
+            .from("user-uploads")
+            .createSignedURL(path: storagePath, expiresIn: 3600)
+        
+        return url.absoluteString
+    }
 }
 
 struct CalendarEntry {
@@ -195,6 +270,26 @@ struct CalendarEntry {
     let imageId: UUID
     let createdByUserId: UUID
     let isFromPartner: Bool
+}
+
+// MARK: - Gallery Uploads
+struct GalleryUpload: Decodable {
+    let id: UUID
+    let user_id: UUID
+    let storage_path: String
+    let file_name: String
+    let file_size: Int64
+    let mime_type: String
+    let width: Int?
+    let height: Int?
+    let created_at: String
+    let updated_at: String
+}
+
+struct CustomSignedUploadURL {
+    let signedURL: String
+    let path: String
+    let token: String
 }
 
 
