@@ -86,8 +86,7 @@ struct CalendarView: View {
                         .padding()
                     }
                 }
-                .navigationTitle("Our Calendar")
-                .navigationBarTitleDisplayMode(.large)
+                .navigationBarHidden(true)
                 .onAppear {
                     Task { await loadCalendarData() }
                 }

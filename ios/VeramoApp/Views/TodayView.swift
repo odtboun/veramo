@@ -11,9 +11,6 @@ struct TodayView: View {
                 VStack(spacing: 24) {
                     // Header with streak
                     VStack(spacing: 16) {
-                        Text("Today")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
                         
                         // Streak counter with liquid glass
                         HStack {

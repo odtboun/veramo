@@ -66,8 +66,8 @@ struct PersonalGalleryView: View {
                     }
                 }
             }
-                .navigationTitle("My Gallery")
-                .navigationBarTitleDisplayMode(.large)
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         PhotosPicker(selection: $photoSelection, matching: .images) {
@@ -405,7 +405,9 @@ struct ImagePreviewView: View {
                 
                 // Action buttons
                 VStack(spacing: 16) {
-                    Button(action: { showingCalendarPicker = true }) {
+                    Button(action: { 
+                        showingCalendarPicker = true
+                    }) {
                         HStack {
                             Image(systemName: "calendar")
                             Text("Add to Calendar")
