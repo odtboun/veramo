@@ -458,32 +458,21 @@ struct ImagePreviewView: View {
     private func addToCalendar(date: Date) async {
         do {
             print("🗓️ Adding to calendar for date: \(date)")
+            print("🖼️ Gallery item ID: \(item.id)")
+            print("📁 Gallery item file name: \(item.fileName)")
             
-            // Get the image ID from the database
-            let uploads = try await SupabaseService.shared.getGalleryUploads()
-            print("🔍 Looking for upload with file_name: \(item.fileName)")
-            print("📋 Available uploads: \(uploads.map { $0.file_name })")
+            // Use the gallery item's ID directly (it should match the database ID)
+            try await SupabaseService.shared.addCalendarEntry(
+                imageId: item.id,
+                scheduledDate: date
+            )
             
-            if let matchingUpload = uploads.first(where: { $0.file_name == item.fileName }) {
-                print("✅ Found matching upload: \(matchingUpload.id)")
-                print("🗓️ Creating calendar entry...")
-                
-                try await SupabaseService.shared.addCalendarEntry(
-                    imageId: matchingUpload.id,
-                    scheduledDate: date
-                )
-                
-                print("✅ Successfully added to calendar for \(date)")
-                
-                // Post notification to refresh calendar
-                NotificationCenter.default.post(name: NSNotification.Name("CalendarEntryAdded"), object: nil)
-                
-                onDismiss()
-            } else {
-                print("❌ No matching upload found for file_name: \(item.fileName)")
-                print("❌ This means the upload didn't complete properly")
-                onDismiss()
-            }
+            print("✅ Successfully added to calendar for \(date)")
+            
+            // Post notification to refresh calendar
+            NotificationCenter.default.post(name: NSNotification.Name("CalendarEntryAdded"), object: nil)
+            
+            onDismiss()
         } catch {
             print("❌ Failed to add to calendar: \(error)")
             print("❌ Error details: \(error.localizedDescription)")

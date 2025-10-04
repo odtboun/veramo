@@ -300,11 +300,15 @@ final class SupabaseService {
     }
     
     func getSignedImageURL(storagePath: String) async throws -> String {
-        let url = try await client.storage
-            .from("user-uploads")
-            .createSignedURL(path: storagePath, expiresIn: 3600)
+        print("🔗 Getting signed URL for: \(storagePath)")
         
-        return url.absoluteString
+        // Try to get a public URL first
+        let publicURL = try client.storage
+            .from("user-uploads")
+            .getPublicURL(path: storagePath)
+        
+        print("🌐 Public URL: \(publicURL.absoluteString)")
+        return publicURL.absoluteString
     }
 }
 
