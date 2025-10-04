@@ -101,47 +101,46 @@ struct VeramoWidgetEntryView : View {
     var entry: Provider.Entry
 
     var body: some View {
-        if let imageUrl = entry.partnerImage, let url = URL(string: imageUrl) {
-            // Try to load from local storage first
-            if let localImage = loadLocalImage(from: url) {
-                Image(uiImage: localImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-                    .ignoresSafeArea()
-            } else {
-                // Fallback to system image if no local image
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 50))
-                    .foregroundColor(.pink)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.pink.opacity(0.3), Color.purple.opacity(0.3)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .scaleEffect(1.6)
-                    .ignoresSafeArea()
-            }
-        } else {
-            // No image URL - show placeholder
-            Image(systemName: "heart.fill")
-                .font(.system(size: 50))
-                .foregroundColor(.pink)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(
+        ZStack {
+            if let imageUrl = entry.partnerImage, let url = URL(string: imageUrl) {
+                // Try to load from local storage first
+                if let localImage = loadLocalImage(from: url) {
+                    Image(uiImage: localImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .ignoresSafeArea()
+                } else {
+                    // Fallback to system image if no local image
                     LinearGradient(
                         colors: [Color.pink.opacity(0.3), Color.purple.opacity(0.3)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
+                    .ignoresSafeArea()
+                    
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.pink)
+                        .scaleEffect(1.6)
+                }
+            } else {
+                // No image URL - show placeholder
+                LinearGradient(
+                    colors: [Color.pink.opacity(0.3), Color.purple.opacity(0.3)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
-                .scaleEffect(1.6)
                 .ignoresSafeArea()
+                
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 50))
+                    .foregroundColor(.pink)
+                    .scaleEffect(1.6)
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
     }
     
     private func loadLocalImage(from url: URL) -> UIImage? {
@@ -225,7 +224,6 @@ struct VeramoWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             VeramoWidgetEntryView(entry: entry)
                 .containerBackground(.clear, for: .widget)
-                .ignoresSafeArea()
         }
         .configurationDisplayName("Partner's Latest Memory")
         .description("Shows your partner's most recent calendar update.")
