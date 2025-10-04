@@ -152,20 +152,41 @@ struct SquareCropView: View {
     }
     
     private func cropImageToSquare() -> UIImage {
-        print("📸 Taking screenshot of square area...")
+        print("📸 Capturing what's in the square...")
         
-        // Simply create a 300x300 image by drawing the current view state
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: cropSize, height: cropSize))
+        // Create a 300x300 square image
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 300, height: 300))
         
-        return renderer.image { _ in
-            // Draw the image with the current scale and offset
-            // This matches exactly what the user sees in the square
-            image.draw(in: CGRect(
-                x: offset.width,
-                y: offset.height,
-                width: image.size.width * scale,
-                height: image.size.height * scale
-            ))
+        return renderer.image { context in
+            // Clear background
+            context.cgContext.setFillColor(UIColor.clear.cgColor)
+            context.cgContext.fill(CGRect(x: 0, y: 0, width: 300, height: 300))
+            
+            // Calculate the image size and position to match what's displayed
+            let imageAspectRatio = image.size.width / image.size.height
+            let displayWidth: CGFloat
+            let displayHeight: CGFloat
+            
+            if imageAspectRatio > 1.0 {
+                // Image is wider - fit by height
+                displayHeight = 300
+                displayWidth = 300 * imageAspectRatio
+            } else {
+                // Image is taller - fit by width
+                displayWidth = 300
+                displayHeight = 300 / imageAspectRatio
+            }
+            
+            // Apply user's scale
+            let scaledWidth = displayWidth * scale
+            let scaledHeight = displayHeight * scale
+            
+            // Calculate position with user's offset
+            let x = (300 - scaledWidth) / 2 + offset.width
+            let y = (300 - scaledHeight) / 2 + offset.height
+            
+            // Draw the image exactly as it appears
+            image.draw(in: CGRect(x: x, y: y, width: scaledWidth, height: scaledHeight))
         }
     }
 }
