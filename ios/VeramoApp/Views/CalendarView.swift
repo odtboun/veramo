@@ -173,9 +173,47 @@ struct CalendarView: View {
                 // Fetch calendar entries for the month
                     struct CalendarEntryRow: Decodable {
                         let id: UUID
-                        let image_data: [String: String]
+                        let image_data: JSONValue
                         let created_by_user_id: UUID
                         let date: String
+                    }
+                    
+                    enum JSONValue: Decodable {
+                        case string(String)
+                        case number(Double)
+                        case bool(Bool)
+                        case null
+                        case object([String: JSONValue])
+                        case array([JSONValue])
+                        
+                        init(from decoder: Decoder) throws {
+                            let container = try decoder.singleValueContainer()
+                            if let string = try? container.decode(String.self) {
+                                self = .string(string)
+                            } else if let number = try? container.decode(Double.self) {
+                                self = .number(number)
+                            } else if let bool = try? container.decode(Bool.self) {
+                                self = .bool(bool)
+                            } else if container.decodeNil() {
+                                self = .null
+                            } else if let object = try? container.decode([String: JSONValue].self) {
+                                self = .object(object)
+                            } else if let array = try? container.decode([JSONValue].self) {
+                                self = .array(array)
+                            } else {
+                                throw DecodingError.typeMismatch(JSONValue.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid JSON value"))
+                            }
+                        }
+                        
+                        var stringValue: String {
+                            switch self {
+                            case .string(let value): return value
+                            case .number(let value): return String(value)
+                            case .bool(let value): return String(value)
+                            case .null: return ""
+                            case .object(_), .array(_): return ""
+                            }
+                        }
                     }
                 
                 let entries: [CalendarEntryRow] = try await SupabaseService.shared.client
@@ -189,9 +227,18 @@ struct CalendarView: View {
                 // Convert to CalendarEntry objects
                 let userId = try await SupabaseService.shared.currentUserId()
                 let calendarEntries = entries.map { entry in
-                    CalendarEntry(
+                    // Convert image_data to [String: String] format
+                    let imageData: [String: String]
+                    switch entry.image_data {
+                    case .object(let dict):
+                        imageData = dict.mapValues { $0.stringValue }
+                    default:
+                        imageData = [:]
+                    }
+                    
+                    return CalendarEntry(
                         id: entry.id,
-                        imageData: entry.image_data,
+                        imageData: imageData,
                         createdByUserId: entry.created_by_user_id,
                         isFromPartner: entry.created_by_user_id != userId,
                         date: entry.date
