@@ -171,6 +171,44 @@ struct TodayView: View {
             // 3. Your latest upload
             // 4. No memory
             
+            enum JSONValue: Decodable {
+                case string(String)
+                case number(Double)
+                case bool(Bool)
+                case null
+                case object([String: JSONValue])
+                case array([JSONValue])
+                
+                init(from decoder: Decoder) throws {
+                    let container = try decoder.singleValueContainer()
+                    if let string = try? container.decode(String.self) {
+                        self = .string(string)
+                    } else if let number = try? container.decode(Double.self) {
+                        self = .number(number)
+                    } else if let bool = try? container.decode(Bool.self) {
+                        self = .bool(bool)
+                    } else if container.decodeNil() {
+                        self = .null
+                    } else if let object = try? container.decode([String: JSONValue].self) {
+                        self = .object(object)
+                    } else if let array = try? container.decode([JSONValue].self) {
+                        self = .array(array)
+                    } else {
+                        throw DecodingError.typeMismatch(JSONValue.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid JSON value"))
+                    }
+                }
+                
+                var stringValue: String {
+                    switch self {
+                    case .string(let value): return value
+                    case .number(let value): return String(value)
+                    case .bool(let value): return String(value)
+                    case .null: return ""
+                    case .object(_), .array(_): return ""
+                    }
+                }
+            }
+            
             let today = Date()
             let userId = try await SupabaseService.shared.currentUserId()
             print("👤 User ID: \(userId)")
@@ -201,7 +239,7 @@ struct TodayView: View {
                 // Get all partner entries
                 struct CalendarEntryRow: Decodable {
                     let id: UUID
-                    let image_data: [String: String]
+                    let image_data: JSONValue
                     let created_by_user_id: UUID
                     let date: String
                 }
@@ -217,7 +255,17 @@ struct TodayView: View {
                 print("📊 Partner entries found: \(allEntries.count)")
                 if let latestPartnerEntry = allEntries.first {
                     print("🎯 Latest partner entry: \(latestPartnerEntry.image_data)")
-                    if let path = latestPartnerEntry.image_data["storage_path"] {
+                    
+                    // Convert image_data to [String: String] format
+                    let imageData: [String: String]
+                    switch latestPartnerEntry.image_data {
+                    case .object(let dict):
+                        imageData = dict.mapValues { $0.stringValue }
+                    default:
+                        imageData = [:]
+                    }
+                    
+                    if let path = imageData["storage_path"] {
                         let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: path)
                         print("✅ Partner's latest image URL: \(imageUrl)")
                         await MainActor.run {
@@ -233,7 +281,7 @@ struct TodayView: View {
             if let couple = couple {
                 struct CalendarEntryRow: Decodable {
                     let id: UUID
-                    let image_data: [String: String]
+                    let image_data: JSONValue
                     let created_by_user_id: UUID
                     let date: String
                 }
@@ -249,7 +297,17 @@ struct TodayView: View {
                 print("📊 My entries found: \(myEntries.count)")
                 if let myLatestEntry = myEntries.first {
                     print("🎯 My latest entry: \(myLatestEntry.image_data)")
-                    if let path = myLatestEntry.image_data["storage_path"] {
+                    
+                    // Convert image_data to [String: String] format
+                    let imageData: [String: String]
+                    switch myLatestEntry.image_data {
+                    case .object(let dict):
+                        imageData = dict.mapValues { $0.stringValue }
+                    default:
+                        imageData = [:]
+                    }
+                    
+                    if let path = imageData["storage_path"] {
                         let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: path)
                         print("✅ My latest image URL: \(imageUrl)")
                         await MainActor.run {
