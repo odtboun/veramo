@@ -9,6 +9,8 @@ struct CalendarView: View {
     @State private var hasCouple = false
     @State private var isLoading = false
     @State private var showingAddMemory = false
+    @State private var cachedImages: [String: UIImage] = [:]
+    @State private var lastCacheMonth: String? = nil
     
     var body: some View {
         NavigationView {
@@ -154,6 +156,15 @@ struct CalendarView: View {
             await MainActor.run { self.isLoading = true }
             
             do {
+                // Check if we need to clear cache for new month
+                let currentMonthString = getMonthString(from: currentMonth)
+                if lastCacheMonth != nil && lastCacheMonth != currentMonthString {
+                    // New month - clear old cache
+                    LocalImageCache.shared.clearOldCache()
+                    await MainActor.run { self.cachedImages = [:] }
+                }
+                await MainActor.run { self.lastCacheMonth = currentMonthString }
+                
                 // Get all calendar entries for the current month
                 let startOfMonth = Calendar.current.dateInterval(of: .month, for: currentMonth)?.start ?? currentMonth
                 let endOfMonth = Calendar.current.dateInterval(of: .month, for: currentMonth)?.end ?? currentMonth
@@ -224,9 +235,12 @@ struct CalendarView: View {
                     .lte("date", value: endDate)
                     .execute().value
                 
-                // Convert to CalendarEntry objects
+                // Convert to CalendarEntry objects with privacy filtering
                 let userId = try await SupabaseService.shared.currentUserId()
-                let calendarEntries = entries.map { entry in
+                let today = Date()
+                let todayString = dateFormatter.string(from: today)
+                
+                let calendarEntries = entries.compactMap { entry -> CalendarEntry? in
                     // Convert image_data to [String: String] format
                     let imageData: [String: String]
                     switch entry.image_data {
@@ -236,11 +250,20 @@ struct CalendarView: View {
                         imageData = [:]
                     }
                     
+                    // Privacy check: Don't show partner's future images
+                    let isFromPartner = entry.created_by_user_id != userId
+                    let isFutureDate = entry.date > todayString
+                    
+                    if isFromPartner && isFutureDate {
+                        print("🔒 Hiding partner's future image for \(entry.date)")
+                        return nil
+                    }
+                    
                     return CalendarEntry(
                         id: entry.id,
                         imageData: imageData,
                         createdByUserId: entry.created_by_user_id,
-                        isFromPartner: entry.created_by_user_id != userId,
+                        isFromPartner: isFromPartner,
                         date: entry.date
                     )
                 }
@@ -255,6 +278,9 @@ struct CalendarView: View {
                     groupedEntries[key]?.append(entry)
                 }
                 
+                // Pre-cache images for current month
+                await preCacheImages(for: calendarEntries)
+                
                 await MainActor.run {
                     self.calendarEntries = groupedEntries
                     self.isLoading = false
@@ -263,6 +289,47 @@ struct CalendarView: View {
             } catch {
                 print("❌ Failed to load calendar data: \(error)")
                 await MainActor.run { self.isLoading = false }
+            }
+        }
+        
+        private func getMonthString(from date: Date) -> String {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM"
+            return formatter.string(from: date)
+        }
+        
+        private func preCacheImages(for entries: [CalendarEntry]) async {
+            for entry in entries {
+                if let storagePath = entry.imageData["storage_path"] {
+                    // Check if already cached
+                    if cachedImages[storagePath] == nil {
+                        // Try to load from cache first
+                        if let cachedImage = LocalImageCache.shared.getCachedImage(for: storagePath) {
+                            await MainActor.run {
+                                self.cachedImages[storagePath] = cachedImage
+                            }
+                        } else {
+                            // Download and cache
+                            do {
+                                let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                                if let url = URL(string: imageUrl),
+                                   let data = try? Data(contentsOf: url),
+                                   let image = UIImage(data: data) {
+                                    
+                                    // Cache the image
+                                    LocalImageCache.shared.cacheImage(image, for: storagePath)
+                                    
+                                    await MainActor.run {
+                                        self.cachedImages[storagePath] = image
+                                    }
+                                    print("💾 Cached image: \(storagePath)")
+                                }
+                            } catch {
+                                print("❌ Failed to cache image \(storagePath): \(error)")
+                            }
+                        }
+                    }
+                }
             }
         }
     
@@ -384,11 +451,17 @@ struct CalendarDayView: View {
 
 struct CalendarEntryThumbnail: View {
     let entry: CalendarEntry
+    @State private var cachedImage: UIImage?
     @State private var imageUrl: String?
     
     var body: some View {
         Group {
-            if let imageUrl = imageUrl {
+            if let cachedImage = cachedImage {
+                Image(uiImage: cachedImage)
+                    .resizable()
+                    .aspectRatio(1, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else if let imageUrl = imageUrl {
                 AsyncImage(url: URL(string: imageUrl)) { image in
                     image
                         .resizable()
@@ -398,6 +471,10 @@ struct CalendarEntryThumbnail: View {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(.ultraThinMaterial)
                         .aspectRatio(1, contentMode: .fit)
+                        .overlay {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        }
                 }
             } else {
                 RoundedRectangle(cornerRadius: 8)
@@ -410,33 +487,60 @@ struct CalendarEntryThumbnail: View {
             }
         }
         .task {
-            await loadImageUrl()
+            await loadImage()
         }
     }
     
-        private func loadImageUrl() async {
+    private func loadImage() async {
+        // Try to get cached image first
+        if let storagePath = entry.imageData["storage_path"] as? String {
+            if let cachedImage = LocalImageCache.shared.getCachedImage(for: storagePath) {
+                await MainActor.run {
+                    self.cachedImage = cachedImage
+                }
+                return
+            }
+            
+            // If not cached, download and cache
             do {
-                // Get the image URL from the image data
-                if let storagePath = entry.imageData["storage_path"] as? String {
-                    let url = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                let url = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                if let imageUrl = URL(string: url),
+                   let data = try? Data(contentsOf: imageUrl),
+                   let image = UIImage(data: data) {
+                    
+                    // Cache the image
+                    LocalImageCache.shared.cacheImage(image, for: storagePath)
+                    
+                    await MainActor.run {
+                        self.cachedImage = image
+                    }
+                } else {
                     await MainActor.run {
                         self.imageUrl = url
                     }
                 }
             } catch {
-                print("❌ Failed to load image URL: \(error)")
+                print("❌ Failed to load image: \(error)")
             }
         }
+    }
 }
 
 struct CalendarEntryView: View {
     let entry: CalendarEntry
+    @State private var cachedImage: UIImage?
     @State private var imageUrl: String?
     @State private var isLoading = true
     
     var body: some View {
         VStack(spacing: 8) {
-            if let imageUrl = imageUrl {
+            if let cachedImage = cachedImage {
+                Image(uiImage: cachedImage)
+                    .resizable()
+                    .aspectRatio(1, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .frame(width: 120, height: 120)
+            } else if let imageUrl = imageUrl {
                 AsyncImage(url: URL(string: imageUrl)) { image in
                     image
                         .resizable()
@@ -478,33 +582,57 @@ struct CalendarEntryView: View {
                 .foregroundColor(.secondary)
         }
         .task {
-            await loadImageUrl()
+            await loadImage()
         }
     }
     
-        private func loadImageUrl() async {
+    private func loadImage() async {
+        // Try to get cached image first
+        if let storagePath = entry.imageData["storage_path"] as? String {
+            if let cachedImage = LocalImageCache.shared.getCachedImage(for: storagePath) {
+                await MainActor.run {
+                    self.cachedImage = cachedImage
+                    self.isLoading = false
+                }
+                return
+            }
+            
+            // If not cached, download and cache
             do {
-                // Get the image URL from the image data
-                if let storagePath = entry.imageData["storage_path"] as? String {
-                    let url = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                let url = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                if let imageUrl = URL(string: url),
+                   let data = try? Data(contentsOf: imageUrl),
+                   let image = UIImage(data: data) {
+                    
+                    // Cache the image
+                    LocalImageCache.shared.cacheImage(image, for: storagePath)
+                    
                     await MainActor.run {
-                        self.imageUrl = url
+                        self.cachedImage = image
                         self.isLoading = false
                     }
                 } else {
                     await MainActor.run {
+                        self.imageUrl = url
                         self.isLoading = false
                     }
                 }
             } catch {
-                print("❌ Failed to load image URL: \(error)")
+                print("❌ Failed to load image: \(error)")
                 await MainActor.run {
                     self.isLoading = false
                 }
             }
+        } else {
+            await MainActor.run {
+                self.isLoading = false
+            }
         }
+    }
 }
 
 #Preview {
     CalendarView()
 }
+
+

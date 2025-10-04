@@ -14,14 +14,23 @@ struct TodayView: View {
                     // Header with streak
                     VStack(spacing: 16) {
                         
-                        // Streak counter with liquid glass
-                        HStack {
-                            Image(systemName: "flame.fill")
-                                .foregroundColor(.orange)
-                            Text("\(streakCount) day streak")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                        }
+                            // Streak counter with liquid glass
+                            HStack {
+                                if streakCount > 0 {
+                                    Text("💖")
+                                        .font(.title2)
+                                    Text("\(streakCount) day streak")
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+                                } else {
+                                    Text("💖")
+                                        .font(.title2)
+                                    Text("Start a new streak!")
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 12)
                         .background {
