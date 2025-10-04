@@ -171,16 +171,16 @@ struct CalendarView: View {
                 }
                 
                 // Fetch calendar entries for the month
-                struct CalendarEntryRow: Decodable {
-                    let id: UUID
-                    let image_id: UUID
-                    let created_by_user_id: UUID
-                    let date: String
-                }
+                    struct CalendarEntryRow: Decodable {
+                        let id: UUID
+                        let image_data: [String: String]
+                        let created_by_user_id: UUID
+                        let date: String
+                    }
                 
                 let entries: [CalendarEntryRow] = try await SupabaseService.shared.client
                     .from("calendar_entries")
-                    .select("id, image_id, created_by_user_id, date")
+                    .select("id, image_data, created_by_user_id, date")
                     .eq("couple_id", value: couple.id)
                     .gte("date", value: startDate)
                     .lte("date", value: endDate)
@@ -191,7 +191,7 @@ struct CalendarView: View {
                 let calendarEntries = entries.map { entry in
                     CalendarEntry(
                         id: entry.id,
-                        imageId: entry.image_id,
+                        imageData: entry.image_data,
                         createdByUserId: entry.created_by_user_id,
                         isFromPartner: entry.created_by_user_id != userId,
                         date: entry.date
@@ -364,20 +364,19 @@ struct CalendarEntryThumbnail: View {
         }
     }
     
-    private func loadImageUrl() async {
-        do {
-            // Get the image URL from the gallery upload
-            let uploads = try await SupabaseService.shared.getGalleryUploads()
-            if let matchingUpload = uploads.first(where: { $0.id == entry.imageId }) {
-                let url = try await SupabaseService.shared.getSignedImageURL(storagePath: matchingUpload.storage_path)
-                await MainActor.run {
-                    self.imageUrl = url
+        private func loadImageUrl() async {
+            do {
+                // Get the image URL from the image data
+                if let storagePath = entry.imageData["storage_path"] as? String {
+                    let url = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                    await MainActor.run {
+                        self.imageUrl = url
+                    }
                 }
+            } catch {
+                print("❌ Failed to load image URL: \(error)")
             }
-        } catch {
-            print("❌ Failed to load image URL: \(error)")
         }
-    }
 }
 
 struct CalendarEntryView: View {
@@ -433,28 +432,27 @@ struct CalendarEntryView: View {
         }
     }
     
-    private func loadImageUrl() async {
-        do {
-            // Get the image URL from the gallery upload
-            let uploads = try await SupabaseService.shared.getGalleryUploads()
-            if let matchingUpload = uploads.first(where: { $0.id == entry.imageId }) {
-                let url = try await SupabaseService.shared.getSignedImageURL(storagePath: matchingUpload.storage_path)
+        private func loadImageUrl() async {
+            do {
+                // Get the image URL from the image data
+                if let storagePath = entry.imageData["storage_path"] as? String {
+                    let url = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                    await MainActor.run {
+                        self.imageUrl = url
+                        self.isLoading = false
+                    }
+                } else {
+                    await MainActor.run {
+                        self.isLoading = false
+                    }
+                }
+            } catch {
+                print("❌ Failed to load image URL: \(error)")
                 await MainActor.run {
-                    self.imageUrl = url
                     self.isLoading = false
                 }
-            } else {
-                await MainActor.run {
-                    self.isLoading = false
-                }
-            }
-        } catch {
-            print("❌ Failed to load image URL: \(error)")
-            await MainActor.run {
-                self.isLoading = false
             }
         }
-    }
 }
 
 #Preview {

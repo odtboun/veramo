@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import Supabase
 
 struct AddMemoryView: View {
     @Environment(\.dismiss) private var dismiss
