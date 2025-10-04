@@ -76,8 +76,10 @@ struct PersonalGalleryView: View {
                 }
             }
             .sheet(isPresented: $showingCropView) {
-                if let selected, let url = selected.url {
-                    CropImageView(imageUrl: url.absoluteString) { _ in }
+                if let selected {
+                    ImagePreviewView(item: selected) {
+                        showingCropView = false
+                    }
                 }
             }
             .onAppear {
@@ -362,8 +364,154 @@ struct GalleryItemView: View {
         }
         .onTapGesture(perform: onTap)
         .contextMenu {
-            Button("Share to Calendar", action: onTap)
+            Button("Add to Calendar") { onTap() }
             Button("Delete", role: .destructive, action: onDelete)
+        }
+    }
+}
+
+struct ImagePreviewView: View {
+    let item: PersonalGalleryView.GalleryItem
+    let onDismiss: () -> Void
+    @State private var showingCalendarPicker = false
+    @State private var selectedDate = Date()
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // Full-size image preview
+                if let localImage = item.localImage {
+                    Image(uiImage: localImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                } else if let url = item.url {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                    } placeholder: {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(.ultraThinMaterial)
+                            .aspectRatio(1, contentMode: .fit)
+                            .overlay {
+                                ProgressView()
+                                    .scaleEffect(1.2)
+                            }
+                    }
+                }
+                
+                // Action buttons
+                VStack(spacing: 16) {
+                    Button(action: { showingCalendarPicker = true }) {
+                        HStack {
+                            Image(systemName: "calendar")
+                            Text("Add to Calendar")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.blue)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Button(action: onDismiss) {
+                        Text("Close")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .padding()
+            .navigationTitle("Image Preview")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done", action: onDismiss)
+                }
+            }
+        }
+        .sheet(isPresented: $showingCalendarPicker) {
+            CalendarDatePickerView(
+                selectedDate: $selectedDate,
+                onConfirm: { date in
+                    Task { await addToCalendar(date: date) }
+                }
+            )
+        }
+    }
+    
+    private func addToCalendar(date: Date) async {
+        do {
+            // Get the image ID from the database
+            let uploads = try await SupabaseService.shared.getGalleryUploads()
+            if let matchingUpload = uploads.first(where: { $0.file_name == item.fileName }) {
+                try await SupabaseService.shared.addCalendarEntry(
+                    imageId: matchingUpload.id,
+                    scheduledDate: date
+                )
+                print("✅ Added to calendar for \(date)")
+            }
+            onDismiss()
+        } catch {
+            print("❌ Failed to add to calendar: \(error)")
+        }
+    }
+}
+
+struct CalendarDatePickerView: View {
+    @Binding var selectedDate: Date
+    let onConfirm: (Date) -> Void
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Text("Choose Date for Calendar")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .padding(.top)
+                
+                DatePicker(
+                    "Select Date",
+                    selection: $selectedDate,
+                    in: Date()...,
+                    displayedComponents: [.date]
+                )
+                .datePickerStyle(.graphical)
+                .padding()
+                
+                Button(action: { onConfirm(selectedDate) }) {
+                    Text("Add to Calendar")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.blue)
+                        }
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal)
+                
+                Spacer()
+            }
+            .navigationTitle("Schedule Memory")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel", action: { dismiss() })
+                }
+            }
         }
     }
 }
