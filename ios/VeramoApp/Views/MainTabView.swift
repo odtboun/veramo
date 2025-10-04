@@ -23,29 +23,13 @@ struct MainTabView: View {
                 }
                 .tag(1)
             
-            // Create New Memory
-            CreateMemoryView()
-                .tabItem {
-                    Image(systemName: "plus.circle.fill")
-                    Text("Create")
-                }
-                .tag(2)
-            
-            // Personal Gallery
-            PersonalGalleryView()
-                .tabItem {
-                    Image(systemName: "photo.on.rectangle.angled")
-                    Text("My Gallery")
-                }
-                .tag(3)
-            
             // Settings
             SettingsView(authVM: authVM)
                 .tabItem {
                     Image(systemName: "gearshape.fill")
                     Text("Settings")
                 }
-                .tag(4)
+                .tag(2)
         }
         .accentColor(.primary)
     }

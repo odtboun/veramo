@@ -8,6 +8,7 @@ struct CalendarView: View {
     @State private var calendarEntries: [String: [CalendarEntry]] = [:]
     @State private var hasCouple = false
     @State private var isLoading = false
+    @State private var showingAddMemory = false
     
     var body: some View {
         NavigationView {
@@ -87,6 +88,21 @@ struct CalendarView: View {
                     }
                 }
                 .navigationBarHidden(true)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            showingAddMemory = true
+                        }) {
+                            HStack {
+                                Image(systemName: "plus")
+                                Text("Add Memory")
+                            }
+                        }
+                    }
+                }
+                .sheet(isPresented: $showingAddMemory) {
+                    AddMemoryView()
+                }
                 .onAppear {
                     Task { await loadCalendarData() }
                 }
