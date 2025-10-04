@@ -56,9 +56,9 @@ struct SquareCropView: View {
                 
                 // Crop area
                 ZStack {
-                    // Background
+                    // White background (matches final result)
                     Rectangle()
-                        .fill(.ultraThinMaterial)
+                        .fill(.white)
                         .frame(width: cropSize, height: cropSize)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay {
@@ -152,16 +152,17 @@ struct SquareCropView: View {
     }
     
     private func cropImageToSquare() -> UIImage {
-        print("📸 Capturing what's in the square...")
+        print("📸 Creating layered canvas with white background...")
         
-        // Create a 300x300 square image
+        // Create a 300x300 square image with layered approach
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: 300, height: 300))
         
         return renderer.image { context in
-            // Clear background
-            context.cgContext.setFillColor(UIColor.clear.cgColor)
+            // Layer 1: White background (permanent base layer)
+            context.cgContext.setFillColor(UIColor.white.cgColor)
             context.cgContext.fill(CGRect(x: 0, y: 0, width: 300, height: 300))
             
+            // Layer 2: User's image on top (adjustable layer)
             // Calculate the image size and position to match what's displayed
             let imageAspectRatio = image.size.width / image.size.height
             let displayWidth: CGFloat
@@ -185,8 +186,10 @@ struct SquareCropView: View {
             let x = (300 - scaledWidth) / 2 + offset.width
             let y = (300 - scaledHeight) / 2 + offset.height
             
-            // Draw the image exactly as it appears
+            // Draw the user's image on top of the white background
             image.draw(in: CGRect(x: x, y: y, width: scaledWidth, height: scaledHeight))
+            
+            print("🎨 Layers: White background + User image at (\(x), \(y)) size \(scaledWidth)x\(scaledHeight)")
         }
     }
 }
