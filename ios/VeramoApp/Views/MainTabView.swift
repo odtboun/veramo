@@ -32,6 +32,10 @@ struct MainTabView: View {
                 .tag(2)
         }
         .accentColor(.primary)
+        .onAppear {
+            // Notify widget to update when app opens
+            NotificationCenter.default.post(name: NSNotification.Name("AppOpened"), object: nil)
+        }
         .onChange(of: selectedTab) { _, newTab in
             // Trigger smart refresh when switching to Calendar or Today tabs
             if newTab == 0 || newTab == 1 {

@@ -1,3 +1,10 @@
+//
+//  VeramoWidgetBundle.swift
+//  VeramoWidget
+//
+//  Created by Ömer Demirtaş on 4.10.2025.
+//
+
 import WidgetKit
 import SwiftUI
 
@@ -5,5 +12,7 @@ import SwiftUI
 struct VeramoWidgetBundle: WidgetBundle {
     var body: some Widget {
         VeramoWidget()
+        VeramoWidgetControl()
+        VeramoWidgetLiveActivity()
     }
 }

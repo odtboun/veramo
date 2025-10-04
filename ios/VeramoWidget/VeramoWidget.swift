@@ -1,20 +1,49 @@
+//
+//  VeramoWidget.swift
+//  VeramoWidget
+//
+//  Created by Ömer Demirtaş on 4.10.2025.
+//
+
 import WidgetKit
 import SwiftUI
 
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), partnerImage: nil, partnerName: "Partner", lastUpdateDate: "Today")
+        SimpleEntry(date: Date(), emoji: "😀")
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let entry = SimpleEntry(date: Date(), partnerImage: nil, partnerName: "Partner", lastUpdateDate: "Today")
+        let entry = SimpleEntry(date: Date(), emoji: "😀")
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
         Task {
             let entry = await fetchPartnerUpdate()
-            let timeline = Timeline(entries: [entry], policy: .after(Calendar.current.date(byAdding: .hour, value: 1, to: Date()) ?? Date()))
+            
+            // Create timeline with multiple update points
+            var entries: [SimpleEntry] = []
+            let currentDate = Date()
+            
+            // Immediate entry
+            entries.append(entry)
+            
+            // Add entries for the next few hours
+            for hourOffset in 1...4 {
+                let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
+                let futureEntry = SimpleEntry(
+                    date: entryDate,
+                    partnerImage: entry.partnerImage,
+                    partnerName: entry.partnerName,
+                    lastUpdateDate: entry.lastUpdateDate
+                )
+                entries.append(futureEntry)
+            }
+            
+            // More frequent updates: every 15 minutes
+            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date()
+            let timeline = Timeline(entries: entries, policy: .after(nextUpdate))
             completion(timeline)
         }
     }
@@ -51,6 +80,7 @@ struct Provider: TimelineProvider {
             formatter.dateFormat = "yyyy-MM-dd"
             let todayString = formatter.string(from: today)
             
+            let supabase = SharedSupabaseService.shared.client
             let entries: [CalendarEntryRow] = try await supabase
                 .from("calendar_entries")
                 .select("id, date, created_at, image_data, created_by_user_id")
@@ -102,6 +132,10 @@ struct Provider: TimelineProvider {
             )
         }
     }
+
+//    func relevances() async -> WidgetRelevances<Void> {
+//        // Generate a list containing the contexts this widget is relevant in.
+//    }
 }
 
 struct SimpleEntry: TimelineEntry {
@@ -191,7 +225,14 @@ struct VeramoWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            VeramoWidgetEntryView(entry: entry)
+            if #available(iOS 17.0, *) {
+                VeramoWidgetEntryView(entry: entry)
+                    .containerBackground(.fill.tertiary, for: .widget)
+            } else {
+                VeramoWidgetEntryView(entry: entry)
+                    .padding()
+                    .background()
+            }
         }
         .configurationDisplayName("Partner's Latest Memory")
         .description("Shows your partner's most recent calendar update.")
