@@ -109,6 +109,7 @@ struct VeramoWidgetEntryView : View {
                     .aspectRatio(contentMode: .fill)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
+                    .ignoresSafeArea()
             } else {
                 // Fallback to system image if no local image
                 Image(systemName: "heart.fill")
@@ -123,6 +124,7 @@ struct VeramoWidgetEntryView : View {
                         )
                     )
                     .scaleEffect(1.6)
+                    .ignoresSafeArea()
             }
         } else {
             // No image URL - show placeholder
@@ -138,6 +140,7 @@ struct VeramoWidgetEntryView : View {
                     )
                 )
                 .scaleEffect(1.6)
+                .ignoresSafeArea()
         }
     }
     
@@ -222,6 +225,7 @@ struct VeramoWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             VeramoWidgetEntryView(entry: entry)
                 .containerBackground(.clear, for: .widget)
+                .ignoresSafeArea()
         }
         .configurationDisplayName("Partner's Latest Memory")
         .description("Shows your partner's most recent calendar update.")
