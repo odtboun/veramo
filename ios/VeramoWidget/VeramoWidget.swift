@@ -101,17 +101,17 @@ struct VeramoWidgetEntryView : View {
     var entry: Provider.Entry
 
     var body: some View {
-        ZStack {
-            if let imageUrl = entry.partnerImage, let url = URL(string: imageUrl) {
-                // Try to load from local storage first
-                if let localImage = loadLocalImage(from: url) {
-                    Image(uiImage: localImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .ignoresSafeArea()
-                } else {
-                    // Fallback to system image if no local image
+        if let imageUrl = entry.partnerImage, let url = URL(string: imageUrl) {
+            // Try to load from local storage first
+            if let localImage = loadLocalImage(from: url) {
+                Image(uiImage: localImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea()
+            } else {
+                // Fallback to system image if no local image
+                ZStack {
                     LinearGradient(
                         colors: [Color.pink.opacity(0.3), Color.purple.opacity(0.3)],
                         startPoint: .topLeading,
@@ -124,8 +124,12 @@ struct VeramoWidgetEntryView : View {
                         .foregroundColor(.pink)
                         .scaleEffect(1.6)
                 }
-            } else {
-                // No image URL - show placeholder
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea()
+            }
+        } else {
+            // No image URL - show placeholder
+            ZStack {
                 LinearGradient(
                     colors: [Color.pink.opacity(0.3), Color.purple.opacity(0.3)],
                     startPoint: .topLeading,
@@ -138,9 +142,9 @@ struct VeramoWidgetEntryView : View {
                     .foregroundColor(.pink)
                     .scaleEffect(1.6)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea()
     }
     
     private func loadLocalImage(from url: URL) -> UIImage? {
@@ -222,8 +226,20 @@ struct VeramoWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            VeramoWidgetEntryView(entry: entry)
-                .containerBackground(.clear, for: .widget)
+            if let imageUrl = entry.partnerImage, let url = URL(string: imageUrl) {
+                VeramoWidgetEntryView(entry: entry)
+                    .containerBackground(.clear, for: .widget)
+            } else {
+                VeramoWidgetEntryView(entry: entry)
+                    .containerBackground(
+                        LinearGradient(
+                            colors: [Color.pink.opacity(0.3), Color.purple.opacity(0.3)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        for: .widget
+                    )
+            }
         }
         .configurationDisplayName("Partner's Latest Memory")
         .description("Shows your partner's most recent calendar update.")
