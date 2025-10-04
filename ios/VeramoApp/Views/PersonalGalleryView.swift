@@ -92,65 +92,61 @@ struct PersonalGalleryView: View {
         }
     }
     
-    private func fetchGallery() async {
-        print("🔄 Fetching gallery...")
-        await MainActor.run { self.isLoading = true }
-        
-        do {
-            let uploads = try await SupabaseService.shared.getGalleryUploads()
-            print("📸 Found \(uploads.count) uploads in database")
+        private func fetchGallery() async {
+            print("🔄 Fetching gallery...")
+            await MainActor.run { self.isLoading = true }
             
-            let signed = try await withThrowingTaskGroup(of: GalleryItem?.self) { group -> [GalleryItem] in
-                for upload in uploads {
-                    group.addTask {
-                        do {
-                            print("🔗 Getting signed URL for: \(upload.storage_path)")
-                            let url = try await SupabaseService.shared.getSignedImageURL(storagePath: upload.storage_path)
-                            print("✅ Signed URL created for: \(upload.storage_path)")
-                            return GalleryItem(
-                                id: upload.id,
-                                url: URL(string: url),
-                                localImage: nil,
-                                storagePath: upload.storage_path,
-                                fileName: upload.file_name,
-                                createdAt: upload.created_at,
-                                isSynced: true,
-                                isUploading: false
-                            )
-                        } catch {
-                            print("❌ Failed to get signed URL for \(upload.storage_path): \(error)")
-                            return nil
+            do {
+                let uploads = try await SupabaseService.shared.getGalleryUploads()
+                print("📸 Found \(uploads.count) uploads in database")
+                
+                let signed = try await withThrowingTaskGroup(of: GalleryItem?.self) { group -> [GalleryItem] in
+                    for upload in uploads {
+                        group.addTask {
+                            do {
+                                print("🔗 Getting signed URL for: \(upload.storage_path)")
+                                let url = try await SupabaseService.shared.getSignedImageURL(storagePath: upload.storage_path)
+                                print("✅ Signed URL created for: \(upload.storage_path)")
+                                return GalleryItem(
+                                    id: upload.id,
+                                    url: URL(string: url),
+                                    localImage: nil,
+                                    storagePath: upload.storage_path,
+                                    fileName: upload.file_name,
+                                    createdAt: upload.created_at,
+                                    isSynced: true,
+                                    isUploading: false
+                                )
+                            } catch {
+                                print("❌ Failed to get signed URL for \(upload.storage_path): \(error)")
+                                return nil
+                            }
                         }
                     }
-                }
-                var out: [GalleryItem] = []
-                for try await v in group { 
-                    if let v { 
-                        out.append(v)
-                        print("✅ Added gallery item: \(v.fileName)")
+                    var out: [GalleryItem] = []
+                    for try await v in group { 
+                        if let v { 
+                            out.append(v)
+                            print("✅ Added gallery item: \(v.fileName)")
+                        }
                     }
+                    return out
                 }
-                return out
-            }
-            
-            print("📱 Gallery items ready: \(signed.count)")
-            await MainActor.run { 
-                // Merge with existing local items, avoiding duplicates
-                let existingLocalItems = self.items.filter { $0.localImage != nil }
-                let syncedItems = signed.filter { remoteItem in
-                    !existingLocalItems.contains { $0.fileName == remoteItem.fileName }
+                
+                print("📱 Gallery items ready: \(signed.count)")
+                await MainActor.run { 
+                    // Replace all items with synced items (no local items on app restart)
+                    self.items = signed
+                    self.isLoading = false
                 }
-                self.items = existingLocalItems + syncedItems
-                self.isLoading = false
-            }
-        } catch { 
-            print("❌ Fetch gallery failed: \(error)")
-            await MainActor.run { 
-                self.isLoading = false
-                self.errorMessage = "Failed to load gallery: \(error.localizedDescription)"
+            } catch { 
+                print("❌ Fetch gallery failed: \(error)")
+                await MainActor.run { 
+                    self.isLoading = false
+                    self.errorMessage = "Failed to load gallery: \(error.localizedDescription)"
+                }
             }
         }
-    }
 
     private func uploadPickedPhoto(_ item: PhotosPickerItem) async {
         print("🔄 Starting photo upload...")
@@ -451,6 +447,8 @@ struct ImagePreviewView: View {
     
     private func addToCalendar(date: Date) async {
         do {
+            print("🗓️ Adding to calendar for date: \(date)")
+            
             // Get the image ID from the database
             let uploads = try await SupabaseService.shared.getGalleryUploads()
             print("🔍 Looking for upload with file_name: \(item.fileName)")
@@ -458,17 +456,24 @@ struct ImagePreviewView: View {
             
             if let matchingUpload = uploads.first(where: { $0.file_name == item.fileName }) {
                 print("✅ Found matching upload: \(matchingUpload.id)")
+                print("🗓️ Creating calendar entry...")
+                
                 try await SupabaseService.shared.addCalendarEntry(
                     imageId: matchingUpload.id,
                     scheduledDate: date
                 )
-                print("✅ Added to calendar for \(date)")
+                
+                print("✅ Successfully added to calendar for \(date)")
+                onDismiss()
             } else {
                 print("❌ No matching upload found for file_name: \(item.fileName)")
+                print("❌ This means the upload didn't complete properly")
+                onDismiss()
             }
-            onDismiss()
         } catch {
             print("❌ Failed to add to calendar: \(error)")
+            print("❌ Error details: \(error.localizedDescription)")
+            onDismiss()
         }
     }
 }

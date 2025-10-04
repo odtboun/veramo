@@ -131,31 +131,46 @@ final class SupabaseService {
     }
     
     // MARK: - Calendar Entries
-    func addCalendarEntry(imageId: UUID, scheduledDate: Date) async throws {
-        let userId = try await currentUserId()
-        let couple = try await fetchCouple()
-        
-        guard let couple = couple else {
-            throw NSError(domain: "NoCouple", code: 1, userInfo: [NSLocalizedDescriptionKey: "No active couple found"])
+        func addCalendarEntry(imageId: UUID, scheduledDate: Date) async throws {
+            print("🗓️ SupabaseService: Adding calendar entry...")
+            let userId = try await currentUserId()
+            print("👤 User ID: \(userId)")
+            
+            let couple = try await fetchCouple()
+            print("💑 Couple: \(couple?.id ?? UUID())")
+
+            guard let couple = couple else {
+                print("❌ No active couple found")
+                throw NSError(domain: "NoCouple", code: 1, userInfo: [NSLocalizedDescriptionKey: "No active couple found"])
+            }
+
+            struct NewEntry: Encodable {
+                let couple_id: UUID
+                let image_id: UUID
+                let date: String
+                let created_by_user_id: UUID
+            }
+
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let dateString = dateFormatter.string(from: scheduledDate)
+            
+            print("📅 Date: \(dateString)")
+            print("🖼️ Image ID: \(imageId)")
+            print("💑 Couple ID: \(couple.id)")
+
+            let newEntry = NewEntry(
+                couple_id: couple.id,
+                image_id: imageId,
+                date: dateString,
+                created_by_user_id: userId
+            )
+            
+            print("📝 Entry data: \(newEntry)")
+
+            _ = try await client.from("calendar_entries").insert(newEntry).execute()
+            print("✅ Calendar entry created successfully!")
         }
-        
-        struct NewEntry: Encodable {
-            let couple_id: UUID
-            let image_id: UUID
-            let date: String
-            let created_by_user_id: UUID
-        }
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        
-        _ = try await client.from("calendar_entries").insert(NewEntry(
-            couple_id: couple.id,
-            image_id: imageId,
-            date: dateFormatter.string(from: scheduledDate),
-            created_by_user_id: userId
-        )).execute()
-    }
     
         func getCalendarEntries(for date: Date) async throws -> [CalendarEntry] {
             let userId = try await currentUserId()
