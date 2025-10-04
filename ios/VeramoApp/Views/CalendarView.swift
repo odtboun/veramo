@@ -300,25 +300,36 @@ struct CalendarView: View {
         }
         
         private func preCacheImages(for entries: [CalendarEntry]) async {
-            for entry in entries {
-                if let storagePath = entry.imageData["storage_path"] {
-                    // Check if already cached
-                    if Self.cachedImages[storagePath] == nil {
-                        // Download and cache
-                        do {
-                            let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
-                            if let url = URL(string: imageUrl),
-                               let data = try? Data(contentsOf: url),
-                               let image = UIImage(data: data) {
-                                
-                                Self.cachedImages[storagePath] = image
-                                print("💾 Cached image: \(storagePath)")
+            // Use TaskGroup for concurrent image loading
+            await withTaskGroup(of: Void.self) { group in
+                for entry in entries {
+                    if let storagePath = entry.imageData["storage_path"] {
+                        // Check if already cached
+                        if Self.cachedImages[storagePath] == nil {
+                            group.addTask {
+                                await self.loadAndCacheImage(storagePath: storagePath)
                             }
-                        } catch {
-                            print("❌ Failed to cache image \(storagePath): \(error)")
                         }
                     }
                 }
+            }
+        }
+        
+        private func loadAndCacheImage(storagePath: String) async {
+            do {
+                let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                if let url = URL(string: imageUrl) {
+                    // Use async URLSession instead of synchronous Data(contentsOf:)
+                    let (data, _) = try await URLSession.shared.data(from: url)
+                    if let image = UIImage(data: data) {
+                        await MainActor.run {
+                            Self.cachedImages[storagePath] = image
+                        }
+                        print("💾 Cached image: \(storagePath)")
+                    }
+                }
+            } catch {
+                print("❌ Failed to cache image \(storagePath): \(error)")
             }
         }
     
@@ -494,15 +505,20 @@ struct CalendarEntryThumbnail: View {
             // If not cached, download and cache
             do {
                 let url = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
-                if let imageUrl = URL(string: url),
-                   let data = try? Data(contentsOf: imageUrl),
-                   let image = UIImage(data: data) {
-                    
-                    // Cache the image in memory
-                    CalendarView.cachedImages[storagePath] = image
-                    
-                    await MainActor.run {
-                        self.cachedImage = image
+                if let imageUrl = URL(string: url) {
+                    // Use async URLSession instead of synchronous Data(contentsOf:)
+                    let (data, _) = try await URLSession.shared.data(from: imageUrl)
+                    if let image = UIImage(data: data) {
+                        // Cache the image in memory
+                        CalendarView.cachedImages[storagePath] = image
+                        
+                        await MainActor.run {
+                            self.cachedImage = image
+                        }
+                    } else {
+                        await MainActor.run {
+                            self.imageUrl = url
+                        }
                     }
                 } else {
                     await MainActor.run {
@@ -590,16 +606,22 @@ struct CalendarEntryView: View {
             // If not cached, download and cache
             do {
                 let url = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
-                if let imageUrl = URL(string: url),
-                   let data = try? Data(contentsOf: imageUrl),
-                   let image = UIImage(data: data) {
-                    
-                    // Cache the image
-                    CalendarView.cachedImages[storagePath] = image
-                    
-                    await MainActor.run {
-                        self.cachedImage = image
-                        self.isLoading = false
+                if let imageUrl = URL(string: url) {
+                    // Use async URLSession instead of synchronous Data(contentsOf:)
+                    let (data, _) = try await URLSession.shared.data(from: imageUrl)
+                    if let image = UIImage(data: data) {
+                        // Cache the image
+                        CalendarView.cachedImages[storagePath] = image
+                        
+                        await MainActor.run {
+                            self.cachedImage = image
+                            self.isLoading = false
+                        }
+                    } else {
+                        await MainActor.run {
+                            self.imageUrl = url
+                            self.isLoading = false
+                        }
                     }
                 } else {
                     await MainActor.run {
