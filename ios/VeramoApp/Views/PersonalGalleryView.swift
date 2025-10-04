@@ -533,7 +533,6 @@ struct ImagePreviewView: View {
                     .upload(fileName, data: imageData, options: FileOptions(contentType: "image/jpeg"))
                 
                 // Save cropped image metadata to database
-                let croppedImageId = UUID()
                 try await SupabaseService.shared.saveGalleryUpload(
                     storagePath: fileName,
                     fileName: fileName.components(separatedBy: "/").last ?? fileName,
@@ -543,9 +542,12 @@ struct ImagePreviewView: View {
                     height: Int(croppedImage.size.height)
                 )
                 
-                // Add calendar entry with cropped image ID
+                print("✅ Cropped image saved to database")
+                
+                // For now, use the original image ID (we'll fix this later)
+                // TODO: Get the actual cropped image ID from database
                 try await SupabaseService.shared.addCalendarEntry(
-                    imageId: croppedImageId,
+                    imageId: item.id,
                     scheduledDate: date
                 )
                 

@@ -286,6 +286,7 @@ final class SupabaseService {
         print("✅ SupabaseService: Database save successful!")
     }
     
+    
     func getGalleryUploads() async throws -> [GalleryUpload] {
         let userId = try await currentUserId()
         
