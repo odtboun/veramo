@@ -156,75 +156,48 @@ struct SquareCropView: View {
         print("📐 Original image size: \(image.size)")
         print("📏 Scale: \(scale), Offset: \(offset)")
         
-        let imageSize = image.size
-        let imageAspectRatio = imageSize.width / imageSize.height
-        
-        // Calculate how the image is displayed in the square frame (aspectRatio: .fit)
-        let displaySize: CGSize
-        if imageAspectRatio > 1.0 {
-            // Image is wider - fit by height (shorter edge = square size)
-            displaySize = CGSize(width: cropSize * imageAspectRatio, height: cropSize)
-        } else {
-            // Image is taller - fit by width (shorter edge = square size)
-            displaySize = CGSize(width: cropSize, height: cropSize / imageAspectRatio)
-        }
-        
-        print("📐 Display size: \(displaySize)")
-        
-        // Calculate the scaled display size
-        let scaledDisplaySize = CGSize(
-            width: displaySize.width * scale,
-            height: displaySize.height * scale
-        )
-        
-        print("📏 Scaled display size: \(scaledDisplaySize)")
-        
-        // Calculate the crop area in the original image coordinates
-        // The crop area is always cropSize x cropSize in the center of the scaled display
-        let cropCenterX = scaledDisplaySize.width / 2 + offset.width
-        let cropCenterY = scaledDisplaySize.height / 2 + offset.height
-        
-        // Convert to original image coordinates
-        let scaleFactor = imageSize.width / displaySize.width
-        let cropSizeInImage = cropSize * scaleFactor
-        
-        let cropRectInImage = CGRect(
-            x: (cropCenterX - cropSize / 2) * scaleFactor,
-            y: (cropCenterY - cropSize / 2) * scaleFactor,
-            width: cropSizeInImage,
-            height: cropSizeInImage
-        )
-        
-        print("🎯 Crop rect in image: \(cropRectInImage)")
-        
-        // Clamp to image bounds
-        let clampedRect = CGRect(
-            x: max(0, min(imageSize.width - cropSizeInImage, cropRectInImage.minX)),
-            y: max(0, min(imageSize.height - cropSizeInImage, cropRectInImage.minY)),
-            width: min(cropSizeInImage, imageSize.width),
-            height: min(cropSizeInImage, imageSize.height)
-        )
-        
-        print("🎯 Clamped crop rect: \(clampedRect)")
-        
-        // Perform the actual crop
-        guard let cgImage = image.cgImage?.cropping(to: clampedRect) else {
-            print("❌ Crop failed, using original image")
-            return image
-        }
-        
-        // Create the final square image
-        let finalImage = UIImage(cgImage: cgImage)
-        print("✅ Cropped image size: \(finalImage.size)")
-        
-        // Resize to exact square size
+        // Create a renderer that captures exactly what's visible in the square
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: cropSize, height: cropSize))
-        let result = renderer.image { _ in
-            finalImage.draw(in: CGRect(x: 0, y: 0, width: cropSize, height: cropSize))
-        }
         
-        print("🎉 Final square image size: \(result.size)")
-        return result
+        return renderer.image { context in
+            // Clear the background
+            context.cgContext.clear(CGRect(x: 0, y: 0, width: cropSize, height: cropSize))
+            
+            // Calculate how the image should be drawn to match the display
+            let imageSize = image.size
+            let imageAspectRatio = imageSize.width / imageSize.height
+            
+            // Calculate the display size (same logic as SwiftUI's aspectRatio: .fit)
+            let displaySize: CGSize
+            if imageAspectRatio > 1.0 {
+                // Image is wider - fit by height
+                displaySize = CGSize(width: cropSize * imageAspectRatio, height: cropSize)
+            } else {
+                // Image is taller - fit by width
+                displaySize = CGSize(width: cropSize, height: cropSize / imageAspectRatio)
+            }
+            
+            // Apply the user's scale and offset
+            let scaledDisplaySize = CGSize(
+                width: displaySize.width * scale,
+                height: displaySize.height * scale
+            )
+            
+            // Calculate where to draw the image to match the user's view
+            let drawRect = CGRect(
+                x: (cropSize - scaledDisplaySize.width) / 2 + offset.width,
+                y: (cropSize - scaledDisplaySize.height) / 2 + offset.height,
+                width: scaledDisplaySize.width,
+                height: scaledDisplaySize.height
+            )
+            
+            print("📐 Display size: \(displaySize)")
+            print("📏 Scaled display size: \(scaledDisplaySize)")
+            print("🎯 Draw rect: \(drawRect)")
+            
+            // Draw the image exactly as it appears in the view
+            image.draw(in: drawRect)
+        }
     }
 }
 
