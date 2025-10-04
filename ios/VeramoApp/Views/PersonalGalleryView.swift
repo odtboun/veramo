@@ -5,10 +5,13 @@ import Supabase
 struct PersonalGalleryView: View {
     struct GalleryItem: Identifiable, Hashable { 
         let id: UUID
-        let url: URL
-        let storagePath: String
+        let url: URL?
+        let localImage: UIImage?
+        let storagePath: String?
         let fileName: String
         let createdAt: String
+        let isSynced: Bool
+        let isUploading: Bool
     }
     @State private var items: [GalleryItem] = []
     @State private var selected: GalleryItem?
@@ -52,34 +55,11 @@ struct PersonalGalleryView: View {
                     ScrollView {
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
                             ForEach(items) { item in
-                                AsyncImage(url: item.url) { image in
-                                    image
-                                        .resizable()
-                                        .aspectRatio(1, contentMode: .fit)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                } placeholder: {
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(.ultraThinMaterial)
-                                        .aspectRatio(1, contentMode: .fit)
-                                        .overlay {
-                                            ProgressView()
-                                                .scaleEffect(0.8)
-                                        }
-                                }
-                                .onTapGesture {
-                                    selected = item
-                                    showingCropView = true
-                                }
-                                .contextMenu {
-                                    Button("Share to Calendar") {
-                                        selected = item
-                                        showingCropView = true
-                                    }
-                                    
-                                    Button("Delete", role: .destructive) {
-                                        Task { await deleteImage(item) }
-                                    }
-                                }
+                                GalleryItemView(
+                                    item: item,
+                                    onTap: { selected = item; showingCropView = true },
+                                    onDelete: { Task { await deleteImage(item) } }
+                                )
                             }
                         }
                         .padding(.horizontal)
@@ -96,8 +76,8 @@ struct PersonalGalleryView: View {
                 }
             }
             .sheet(isPresented: $showingCropView) {
-                if let selected {
-                    CropImageView(imageUrl: selected.url.absoluteString) { _ in }
+                if let selected, let url = selected.url {
+                    CropImageView(imageUrl: url.absoluteString) { _ in }
                 }
             }
             .onAppear {
@@ -127,10 +107,13 @@ struct PersonalGalleryView: View {
                             print("✅ Signed URL created for: \(upload.storage_path)")
                             return GalleryItem(
                                 id: upload.id,
-                                url: URL(string: url)!,
+                                url: URL(string: url),
+                                localImage: nil,
                                 storagePath: upload.storage_path,
                                 fileName: upload.file_name,
-                                createdAt: upload.created_at
+                                createdAt: upload.created_at,
+                                isSynced: true,
+                                isUploading: false
                             )
                         } catch {
                             print("❌ Failed to get signed URL for \(upload.storage_path): \(error)")
@@ -150,7 +133,12 @@ struct PersonalGalleryView: View {
             
             print("📱 Gallery items ready: \(signed.count)")
             await MainActor.run { 
-                self.items = signed
+                // Merge with existing local items, avoiding duplicates
+                let existingLocalItems = self.items.filter { $0.localImage != nil }
+                let syncedItems = signed.filter { remoteItem in
+                    !existingLocalItems.contains { $0.fileName == remoteItem.fileName }
+                }
+                self.items = existingLocalItems + syncedItems
                 self.isLoading = false
             }
         } catch { 
@@ -164,13 +152,11 @@ struct PersonalGalleryView: View {
 
     private func uploadPickedPhoto(_ item: PhotosPickerItem) async {
         print("🔄 Starting photo upload...")
-        await MainActor.run { self.isLoading = true }
         
         do {
             print("📱 Loading data from PhotosPickerItem...")
             guard let data = try await item.loadTransferable(type: Data.self) else { 
                 print("❌ Failed to load data from PhotosPickerItem")
-                await MainActor.run { self.isLoading = false }
                 return 
             }
             print("✅ Data loaded: \(data.count) bytes")
@@ -178,17 +164,53 @@ struct PersonalGalleryView: View {
             // Get image metadata
             guard let image = UIImage(data: data) else {
                 print("❌ Failed to create UIImage from data")
-                await MainActor.run { self.isLoading = false }
                 return
             }
             print("✅ Image created: \(image.size.width)x\(image.size.height)")
             
+            // Create local gallery item immediately
+            let localItem = GalleryItem(
+                id: UUID(),
+                url: nil,
+                localImage: image,
+                storagePath: nil,
+                fileName: "\(UUID().uuidString).jpg",
+                createdAt: ISO8601DateFormatter().string(from: Date()),
+                isSynced: false,
+                isUploading: true
+            )
+            
+            // Add to gallery immediately
+            await MainActor.run {
+                self.items.insert(localItem, at: 0)
+                self.isLoading = false
+            }
+            
+            print("📱 Image added to gallery locally")
+            
+            // Upload to Supabase in background
+            Task {
+                await uploadToSupabase(localItem: localItem, data: data, image: image)
+            }
+            
+        } catch { 
+            print("❌ Upload failed: \(error)")
+            print("❌ Error details: \(error.localizedDescription)")
+            await MainActor.run { 
+                self.isLoading = false
+                self.errorMessage = "Upload failed: \(error.localizedDescription)"
+            }
+        }
+    }
+    
+    private func uploadToSupabase(localItem: GalleryItem, data: Data, image: UIImage) async {
+        do {
             let userId = try await SupabaseService.shared.currentUserId()
             let fileName = "\(userId)/\(UUID().uuidString).jpg"
             print("📝 File name: \(fileName)")
             
             // Upload directly to Supabase Storage
-            print("☁️ Uploading directly to Supabase Storage...")
+            print("☁️ Uploading to Supabase Storage...")
             try await SupabaseService.shared.client.storage
                 .from("user-uploads")
                 .upload(fileName, data: data, options: FileOptions(contentType: "image/jpeg"))
@@ -206,26 +228,52 @@ struct PersonalGalleryView: View {
             )
             print("✅ Database save successful")
             
-            print("🔄 Refreshing gallery...")
-            await fetchGallery()
-            print("✅ Upload complete!")
+            // Update local item to show as synced
+            await MainActor.run {
+                if let index = self.items.firstIndex(where: { $0.id == localItem.id }) {
+                    self.items[index] = GalleryItem(
+                        id: localItem.id,
+                        url: nil, // Will be fetched from database
+                        localImage: localItem.localImage,
+                        storagePath: fileName,
+                        fileName: localItem.fileName,
+                        createdAt: localItem.createdAt,
+                        isSynced: true,
+                        isUploading: false
+                    )
+                }
+            }
             
-        } catch { 
-            print("❌ Upload failed: \(error)")
-            print("❌ Error details: \(error.localizedDescription)")
-            await MainActor.run { 
-                self.isLoading = false
-                self.errorMessage = "Upload failed: \(error.localizedDescription)"
+            print("✅ Background upload complete!")
+            
+        } catch {
+            print("❌ Background upload failed: \(error)")
+            // Update local item to show upload failed
+            await MainActor.run {
+                if let index = self.items.firstIndex(where: { $0.id == localItem.id }) {
+                    self.items[index] = GalleryItem(
+                        id: localItem.id,
+                        url: nil,
+                        localImage: localItem.localImage,
+                        storagePath: nil,
+                        fileName: localItem.fileName,
+                        createdAt: localItem.createdAt,
+                        isSynced: false,
+                        isUploading: false
+                    )
+                }
             }
         }
     }
     
     private func deleteImage(_ item: GalleryItem) async {
         do {
-            // Delete from storage
-            try await SupabaseService.shared.client.storage
-                .from("user-uploads")
-                .remove(paths: [item.storagePath])
+            // Delete from storage if it exists
+            if let storagePath = item.storagePath {
+                try await SupabaseService.shared.client.storage
+                    .from("user-uploads")
+                    .remove(paths: [storagePath])
+            }
             
             // Delete from database
             try await SupabaseService.shared.client
@@ -234,12 +282,88 @@ struct PersonalGalleryView: View {
                 .eq("id", value: item.id)
                 .execute()
             
-            await fetchGallery()
+            // Remove from local items
+            await MainActor.run {
+                self.items.removeAll { $0.id == item.id }
+            }
         } catch {
             print("Delete failed: \(error)")
             await MainActor.run {
                 self.errorMessage = "Delete failed: \(error.localizedDescription)"
             }
+        }
+    }
+}
+
+struct GalleryItemView: View {
+    let item: PersonalGalleryView.GalleryItem
+    let onTap: () -> Void
+    let onDelete: () -> Void
+    
+    var body: some View {
+        ZStack {
+            // Show local image if available, otherwise remote
+            if let localImage = item.localImage {
+                Image(uiImage: localImage)
+                    .resizable()
+                    .aspectRatio(1, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else if let url = item.url {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(1, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.ultraThinMaterial)
+                        .aspectRatio(1, contentMode: .fit)
+                        .overlay {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        }
+                }
+            } else {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.ultraThinMaterial)
+                    .aspectRatio(1, contentMode: .fit)
+                    .overlay {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    }
+            }
+            
+            // Upload status indicator
+            VStack {
+                HStack {
+                    Spacer()
+                    if item.isUploading {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                            .padding(8)
+                            .background(.ultraThinMaterial, in: Circle())
+                    } else if !item.isSynced {
+                        Image(systemName: "icloud.and.arrow.up")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                            .padding(8)
+                            .background(.ultraThinMaterial, in: Circle())
+                    } else {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                            .padding(8)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                }
+                Spacer()
+            }
+            .padding(8)
+        }
+        .onTapGesture(perform: onTap)
+        .contextMenu {
+            Button("Share to Calendar", action: onTap)
+            Button("Delete", role: .destructive, action: onDelete)
         }
     }
 }
