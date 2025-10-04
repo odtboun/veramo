@@ -369,115 +369,143 @@ struct GalleryItemView: View {
     }
 }
 
+enum ImagePreviewState {
+    case preview
+    case cropping
+    case datePicker
+}
+
 struct ImagePreviewView: View {
     let item: PersonalGalleryView.GalleryItem
     let onDismiss: () -> Void
-    @State private var showingCalendarPicker = false
-    @State private var showingSquareCrop = false
+    @State private var currentState: ImagePreviewState = .preview
     @State private var selectedDate = Date()
     @State private var croppedImage: UIImage?
+    @State private var imageForCropping: UIImage?
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                // Full-size image preview
-                if let localImage = item.localImage {
-                    Image(uiImage: localImage)
+            Group {
+                switch currentState {
+                case .preview:
+                    previewView
+                case .cropping:
+                    if let image = imageForCropping {
+                        SquareCropView(
+                            image: image,
+                            onCrop: { cropped in
+                                croppedImage = cropped
+                                currentState = .datePicker
+                            },
+                            onCancel: {
+                                currentState = .preview
+                            }
+                        )
+                    }
+                case .datePicker:
+                    CalendarDatePickerView(
+                        selectedDate: $selectedDate,
+                        onConfirm: { date in
+                            Task { await addToCalendar(date: date) }
+                        }
+                    )
+                }
+            }
+            .navigationTitle(currentState == .preview ? "Image Preview" : "")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if currentState == .preview {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done", action: onDismiss)
+                    }
+                } else {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Back") {
+                            switch currentState {
+                            case .cropping:
+                                currentState = .preview
+                            case .datePicker:
+                                currentState = .cropping
+                            case .preview:
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private var previewView: some View {
+        VStack(spacing: 20) {
+            // Full-size image preview
+            if let localImage = item.localImage {
+                Image(uiImage: localImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+            } else if let url = item.url {
+                AsyncImage(url: url) { image in
+                    image
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-                } else if let url = item.url {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-                    } placeholder: {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(.ultraThinMaterial)
-                            .aspectRatio(1, contentMode: .fit)
-                            .overlay {
-                                ProgressView()
-                                    .scaleEffect(1.2)
-                            }
-                    }
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(.ultraThinMaterial)
+                        .aspectRatio(1, contentMode: .fit)
+                        .overlay {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                        }
                 }
-                
-                // Action buttons
-                VStack(spacing: 16) {
-                    Button(action: { 
-                        if let localImage = item.localImage {
-                            croppedImage = localImage
-                            showingSquareCrop = true
-                        } else if let url = item.url {
-                            // Load image from URL for cropping
-                            Task {
-                                if let data = try? await URLSession.shared.data(from: url).0,
-                                   let image = UIImage(data: data) {
-                                    await MainActor.run {
-                                        croppedImage = image
-                                        showingSquareCrop = true
-                                    }
+            }
+            
+            // Action buttons
+            VStack(spacing: 16) {
+                Button(action: { 
+                    if let localImage = item.localImage {
+                        imageForCropping = localImage
+                        currentState = .cropping
+                    } else if let url = item.url {
+                        // Load image from URL for cropping
+                        Task {
+                            if let data = try? await URLSession.shared.data(from: url).0,
+                               let image = UIImage(data: data) {
+                                await MainActor.run {
+                                    imageForCropping = image
+                                    currentState = .cropping
                                 }
                             }
                         }
-                    }) {
-                        HStack {
-                            Image(systemName: "calendar")
-                            Text("Add to Calendar")
-                        }
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "calendar")
+                        Text("Add to Calendar")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.blue)
+                    }
+                }
+                .buttonStyle(.plain)
+                
+                Button(action: onDismiss) {
+                    Text("Close")
                         .font(.headline)
-                        .foregroundColor(.white)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(.blue)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    
-                    Button(action: onDismiss) {
-                        Text("Close")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding(.horizontal)
-            }
-            .padding()
-            .navigationTitle("Image Preview")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done", action: onDismiss)
+                        .foregroundColor(.secondary)
                 }
             }
+            .padding(.horizontal)
         }
-        .sheet(isPresented: $showingSquareCrop) {
-            if let image = croppedImage {
-                SquareCropView(
-                    image: image,
-                    onCrop: { cropped in
-                        showingSquareCrop = false
-                        showingCalendarPicker = true
-                    },
-                    onCancel: {
-                        showingSquareCrop = false
-                    }
-                )
-            }
-        }
-        .sheet(isPresented: $showingCalendarPicker) {
-            CalendarDatePickerView(
-                selectedDate: $selectedDate,
-                onConfirm: { date in
-                    Task { await addToCalendar(date: date) }
-                }
-            )
-        }
+        .padding()
     }
     
     private func addToCalendar(date: Date) async {

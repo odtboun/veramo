@@ -59,9 +59,42 @@ struct SquareCropView: View {
                                     
                                     DragGesture()
                                         .onChanged { value in
-                                            offset = CGSize(
+                                            let newOffset = CGSize(
                                                 width: lastOffset.width + value.translation.width,
                                                 height: lastOffset.height + value.translation.height
+                                            )
+                                            
+                                            // Calculate image size after scaling
+                                            let imageAspectRatio = image.size.width / image.size.height
+                                            let frameAspectRatio: CGFloat = 1.0 // Square frame
+                                            
+                                            let imageDisplaySize: CGSize
+                                            if imageAspectRatio > frameAspectRatio {
+                                                // Image is wider than square - fit by height
+                                                imageDisplaySize = CGSize(
+                                                    width: cropSize * imageAspectRatio,
+                                                    height: cropSize
+                                                )
+                                            } else {
+                                                // Image is taller than square - fit by width
+                                                imageDisplaySize = CGSize(
+                                                    width: cropSize,
+                                                    height: cropSize / imageAspectRatio
+                                                )
+                                            }
+                                            
+                                            let scaledImageSize = CGSize(
+                                                width: imageDisplaySize.width * scale,
+                                                height: imageDisplaySize.height * scale
+                                            )
+                                            
+                                            // Calculate max offset to keep image within bounds
+                                            let maxOffsetX = max(0, (scaledImageSize.width - cropSize) / 2)
+                                            let maxOffsetY = max(0, (scaledImageSize.height - cropSize) / 2)
+                                            
+                                            offset = CGSize(
+                                                width: max(-maxOffsetX, min(maxOffsetX, newOffset.width)),
+                                                height: max(-maxOffsetY, min(maxOffsetY, newOffset.height))
                                             )
                                         }
                                         .onEnded { value in
@@ -69,7 +102,6 @@ struct SquareCropView: View {
                                         }
                                 )
                             )
-                            .clipped()
                     }
                     .frame(width: cropSize, height: cropSize)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
