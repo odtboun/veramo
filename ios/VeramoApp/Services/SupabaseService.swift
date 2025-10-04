@@ -191,13 +191,16 @@ final class SupabaseService {
     
     // MARK: - Gallery Management
     func getSignedUploadURL(fileName: String, mimeType: String) async throws -> CustomSignedUploadURL {
+        print("🔑 SupabaseService: Getting signed upload URL...")
         let userId = try await currentUserId()
         let filePath = "\(userId)/\(UUID().uuidString)_\(fileName)"
+        print("📁 File path: \(filePath)")
         
         let response = try await client.storage
             .from("user-uploads")
             .createSignedUploadURL(path: filePath)
         
+        print("✅ SupabaseService: Signed URL created successfully")
         return CustomSignedUploadURL(
             signedURL: response.signedURL.absoluteString,
             path: response.path,
@@ -206,6 +209,10 @@ final class SupabaseService {
     }
     
     func uploadImageToStorage(data: Data, signedURL: String) async throws {
+        print("☁️ SupabaseService: Uploading to storage...")
+        print("📊 Data size: \(data.count) bytes")
+        print("🔗 Signed URL: \(signedURL)")
+        
         var request = URLRequest(url: URL(string: signedURL)!)
         request.httpMethod = "PUT"
         request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
@@ -213,14 +220,25 @@ final class SupabaseService {
         
         let (_, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw NSError(domain: "UploadError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to upload image"])
+        guard let httpResponse = response as? HTTPURLResponse else {
+            print("❌ SupabaseService: Invalid response type")
+            throw NSError(domain: "UploadError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid response from storage"])
         }
+        
+        print("📡 SupabaseService: HTTP Status: \(httpResponse.statusCode)")
+        
+        guard httpResponse.statusCode == 200 else {
+            print("❌ SupabaseService: Upload failed with status \(httpResponse.statusCode)")
+            throw NSError(domain: "UploadError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to upload image - Status: \(httpResponse.statusCode)"])
+        }
+        
+        print("✅ SupabaseService: Upload successful!")
     }
     
     func saveGalleryUpload(storagePath: String, fileName: String, fileSize: Int64, mimeType: String, width: Int?, height: Int?) async throws {
+        print("💾 SupabaseService: Saving to database...")
         let userId = try await currentUserId()
+        print("👤 User ID: \(userId)")
         
         struct NewUpload: Encodable {
             let user_id: UUID
@@ -232,7 +250,7 @@ final class SupabaseService {
             let height: Int?
         }
         
-        _ = try await client.from("gallery_uploads").insert(NewUpload(
+        let newUpload = NewUpload(
             user_id: userId,
             storage_path: storagePath,
             file_name: fileName,
@@ -240,7 +258,12 @@ final class SupabaseService {
             mime_type: mimeType,
             width: width,
             height: height
-        )).execute()
+        )
+        
+        print("📝 Upload data: \(newUpload)")
+        
+        _ = try await client.from("gallery_uploads").insert(newUpload).execute()
+        print("✅ SupabaseService: Database save successful!")
     }
     
     func getGalleryUploads() async throws -> [GalleryUpload] {

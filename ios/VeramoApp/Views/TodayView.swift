@@ -60,31 +60,70 @@ struct TodayView: View {
                             .frame(maxWidth: 300)
                             .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                         } else {
-                            // Empty state
-                            VStack(spacing: 16) {
-                                Image(systemName: "photo.on.rectangle.angled")
-                                    .font(.system(size: 60))
-                                    .foregroundColor(.secondary)
-                                
-                                VStack(spacing: 8) {
-                                    Text("No Memory Today")
-                                        .font(.title3)
-                                        .fontWeight(.semibold)
+                            // Empty state - Cute and inviting
+                            VStack(spacing: 24) {
+                                // Cute heart icon with sparkles
+                                ZStack {
+                                    Circle()
+                                        .fill(.pink.opacity(0.1))
+                                        .frame(width: 120, height: 120)
                                     
-                                    Text("Add a photo to create today's memory")
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "heart.fill")
+                                            .font(.system(size: 40))
+                                            .foregroundColor(.pink)
+                                        
+                                        Image(systemName: "sparkles")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(.yellow)
+                                            .offset(x: 20, y: -10)
+                                    }
+                                }
+                                
+                                VStack(spacing: 12) {
+                                    Text("No Memory Today")
+                                        .font(.title2)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.primary)
+                                    
+                                    Text("Capture a special moment and create your first memory together! 💕")
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
                                         .multilineTextAlignment(.center)
+                                        .lineLimit(3)
+                                }
+                                
+                                // Cute decorative elements
+                                HStack(spacing: 8) {
+                                    Circle()
+                                        .fill(.blue.opacity(0.3))
+                                        .frame(width: 8, height: 8)
+                                    Circle()
+                                        .fill(.pink.opacity(0.3))
+                                        .frame(width: 8, height: 8)
+                                    Circle()
+                                        .fill(.purple.opacity(0.3))
+                                        .frame(width: 8, height: 8)
                                 }
                             }
-                            .frame(maxWidth: 300, maxHeight: 300)
+                            .padding(.vertical, 40)
+                            .padding(.horizontal, 32)
+                            .frame(maxWidth: 320)
                             .background {
-                                RoundedRectangle(cornerRadius: 20)
+                                RoundedRectangle(cornerRadius: 24)
                                     .fill(.ultraThinMaterial)
                                     .overlay {
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .stroke(.secondary.opacity(0.3), lineWidth: 1)
+                                        RoundedRectangle(cornerRadius: 24)
+                                            .stroke(
+                                                LinearGradient(
+                                                    colors: [.pink.opacity(0.3), .blue.opacity(0.3)],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                ),
+                                                lineWidth: 1
+                                            )
                                     }
+                                    .shadow(color: .pink.opacity(0.1), radius: 10, x: 0, y: 5)
                             }
                         }
                     }

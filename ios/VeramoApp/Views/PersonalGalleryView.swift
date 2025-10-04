@@ -146,27 +146,40 @@ struct PersonalGalleryView: View {
     }
 
     private func uploadPickedPhoto(_ item: PhotosPickerItem) async {
+        print("🔄 Starting photo upload...")
         await MainActor.run { self.isLoading = true }
         
         do {
+            print("📱 Loading data from PhotosPickerItem...")
             guard let data = try await item.loadTransferable(type: Data.self) else { 
+                print("❌ Failed to load data from PhotosPickerItem")
                 await MainActor.run { self.isLoading = false }
                 return 
             }
+            print("✅ Data loaded: \(data.count) bytes")
             
             // Get image metadata
             guard let image = UIImage(data: data) else {
+                print("❌ Failed to create UIImage from data")
                 await MainActor.run { self.isLoading = false }
                 return
             }
+            print("✅ Image created: \(image.size.width)x\(image.size.height)")
             
             let fileName = "\(UUID().uuidString).jpg"
+            print("📝 File name: \(fileName)")
+            
+            print("🔑 Getting signed upload URL...")
             let signedURL = try await SupabaseService.shared.getSignedUploadURL(fileName: fileName, mimeType: "image/jpeg")
+            print("✅ Signed URL received: \(signedURL.signedURL)")
             
             // Upload to storage
+            print("☁️ Uploading to Supabase Storage...")
             try await SupabaseService.shared.uploadImageToStorage(data: data, signedURL: signedURL.signedURL)
+            print("✅ Upload to storage successful")
             
             // Save to database
+            print("💾 Saving to database...")
             try await SupabaseService.shared.saveGalleryUpload(
                 storagePath: signedURL.path,
                 fileName: fileName,
@@ -175,10 +188,15 @@ struct PersonalGalleryView: View {
                 width: Int(image.size.width),
                 height: Int(image.size.height)
             )
+            print("✅ Database save successful")
             
+            print("🔄 Refreshing gallery...")
             await fetchGallery()
+            print("✅ Upload complete!")
+            
         } catch { 
-            print("Upload failed: \(error)")
+            print("❌ Upload failed: \(error)")
+            print("❌ Error details: \(error.localizedDescription)")
             await MainActor.run { 
                 self.isLoading = false
                 self.errorMessage = "Upload failed: \(error.localizedDescription)"
