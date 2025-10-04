@@ -88,15 +88,6 @@ struct CalendarView: View {
                 }
                 .navigationTitle("Our Calendar")
                 .navigationBarTitleDisplayMode(.large)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: {
-                            Task { await loadCalendarData() }
-                        }) {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                    }
-                }
                 .onAppear {
                     Task { await loadCalendarData() }
                 }

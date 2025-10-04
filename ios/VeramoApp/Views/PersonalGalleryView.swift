@@ -69,13 +69,6 @@ struct PersonalGalleryView: View {
                 .navigationTitle("My Gallery")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button(action: {
-                            Task { await fetchGallery() }
-                        }) {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                    }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         PhotosPicker(selection: $photoSelection, matching: .images) {
                             HStack { Image(systemName: "plus"); Text("Add Photo") }
