@@ -510,17 +510,55 @@ struct ImagePreviewView: View {
     
     private func addToCalendar(date: Date) async {
         do {
-            print("🗓️ Adding to calendar for date: \(date)")
-            print("🖼️ Gallery item ID: \(item.id)")
-            print("📁 Gallery item file name: \(item.fileName)")
+            print("🗓️ Adding cropped image to calendar for date: \(date)")
             
-            // Use the gallery item's ID directly (it should match the database ID)
-            try await SupabaseService.shared.addCalendarEntry(
-                imageId: item.id,
-                scheduledDate: date
-            )
-            
-            print("✅ Successfully added to calendar for \(date)")
+            // If we have a cropped image, upload it and use that
+            if let croppedImage = croppedImage {
+                print("🖼️ Uploading cropped image...")
+                
+                // Convert cropped image to data
+                guard let imageData = croppedImage.jpegData(compressionQuality: 0.8) else {
+                    print("❌ Failed to convert cropped image to data")
+                    onDismiss()
+                    return
+                }
+                
+                // Upload cropped image to storage
+                let userId = try await SupabaseService.shared.currentUserId()
+                let fileName = "\(userId)/cropped_\(UUID().uuidString).jpg"
+                
+                print("📝 Uploading cropped image: \(fileName)")
+                try await SupabaseService.shared.client.storage
+                    .from("user-uploads")
+                    .upload(fileName, data: imageData, options: FileOptions(contentType: "image/jpeg"))
+                
+                // Save cropped image metadata to database
+                let croppedImageId = UUID()
+                try await SupabaseService.shared.saveGalleryUpload(
+                    storagePath: fileName,
+                    fileName: fileName.components(separatedBy: "/").last ?? fileName,
+                    fileSize: Int64(imageData.count),
+                    mimeType: "image/jpeg",
+                    width: Int(croppedImage.size.width),
+                    height: Int(croppedImage.size.height)
+                )
+                
+                // Add calendar entry with cropped image ID
+                try await SupabaseService.shared.addCalendarEntry(
+                    imageId: croppedImageId,
+                    scheduledDate: date
+                )
+                
+                print("✅ Successfully added cropped image to calendar for \(date)")
+            } else {
+                // Fallback to original image if no cropped version
+                print("⚠️ No cropped image, using original image")
+                try await SupabaseService.shared.addCalendarEntry(
+                    imageId: item.id,
+                    scheduledDate: date
+                )
+                print("✅ Successfully added original image to calendar for \(date)")
+            }
             
             // Post notification to refresh calendar
             NotificationCenter.default.post(name: NSNotification.Name("CalendarEntryAdded"), object: nil)
