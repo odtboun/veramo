@@ -163,6 +163,8 @@ struct TodayView: View {
     
     private func loadTodaysMemory() async {
         do {
+            print("🏠 TodayView: Loading today's memory...")
+            
             // Priority system for Today view:
             // 1. Partner's upload for today
             // 2. Partner's latest upload (any date)
@@ -171,15 +173,19 @@ struct TodayView: View {
             
             let today = Date()
             let userId = try await SupabaseService.shared.currentUserId()
+            print("👤 User ID: \(userId)")
             
             // Get today's entries
             let todaysEntries = try await SupabaseService.shared.getCalendarEntries(for: today)
             let partnerTodaysEntries = todaysEntries.filter { $0.isFromPartner }
+            print("📅 Today's entries: \(todaysEntries.count), Partner entries: \(partnerTodaysEntries.count)")
             
             if let partnerTodayEntry = partnerTodaysEntries.first {
                 // Priority 1: Partner's upload for today
+                print("🎯 Found partner's today entry: \(partnerTodayEntry.imageData)")
                 if let storagePath = partnerTodayEntry.imageData["storage_path"] as? String {
                     let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                    print("✅ Partner's today image URL: \(imageUrl)")
                     await MainActor.run {
                         self.todaysImage = imageUrl
                         self.hasMemory = true
@@ -190,6 +196,7 @@ struct TodayView: View {
             
             // Priority 2: Partner's latest upload (any date)
             let couple = await SupabaseService.shared.fetchCouple()
+            print("💑 Couple: \(couple?.id ?? UUID())")
             if let couple = couple {
                 // Get all partner entries
                 struct CalendarEntryRow: Decodable {
@@ -207,9 +214,12 @@ struct TodayView: View {
                     .order("date", ascending: false)
                     .execute().value
                 
+                print("📊 Partner entries found: \(allEntries.count)")
                 if let latestPartnerEntry = allEntries.first {
+                    print("🎯 Latest partner entry: \(latestPartnerEntry.image_data)")
                     if let path = latestPartnerEntry.image_data["storage_path"] {
                         let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: path)
+                        print("✅ Partner's latest image URL: \(imageUrl)")
                         await MainActor.run {
                             self.todaysImage = imageUrl
                             self.hasMemory = true
@@ -236,9 +246,12 @@ struct TodayView: View {
                     .order("date", ascending: false)
                     .execute().value
                 
+                print("📊 My entries found: \(myEntries.count)")
                 if let myLatestEntry = myEntries.first {
+                    print("🎯 My latest entry: \(myLatestEntry.image_data)")
                     if let path = myLatestEntry.image_data["storage_path"] {
                         let imageUrl = try await SupabaseService.shared.getSignedImageURL(storagePath: path)
+                        print("✅ My latest image URL: \(imageUrl)")
                         await MainActor.run {
                             self.todaysImage = imageUrl
                             self.hasMemory = true
@@ -249,6 +262,7 @@ struct TodayView: View {
             }
             
             // Priority 4: No memory
+            print("❌ No memory found - showing empty state")
             await MainActor.run {
                 self.hasMemory = false
                 self.todaysImage = nil
