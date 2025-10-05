@@ -15,19 +15,19 @@ struct MainTabView: View {
                 }
                 .tag(0)
             
-            // Shared Calendar
-            CalendarView()
-                .tabItem {
-                    Image(systemName: "calendar")
-                    Text("Calendar")
-                }
-                .tag(1)
-
             // Create (AI Image Generation)
             CreateTabView()
                 .tabItem {
                     Image(systemName: "sparkles")
                     Text("Create")
+                }
+                .tag(1)
+
+            // Shared Calendar
+            CalendarView()
+                .tabItem {
+                    Image(systemName: "calendar")
+                    Text("Calendar")
                 }
                 .tag(2)
             
@@ -52,7 +52,7 @@ struct MainTabView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("NavigateToCreateTab"))) { _ in
-            selectedTab = 2
+            selectedTab = 1
         }
     }
 }
@@ -221,7 +221,7 @@ struct CreateTabView: View {
                 }
                 .padding(16)
             }
-            .navigationTitle("Create")
+            .navigationBarHidden(true)
             .navigationDestination(isPresented: $navigateToEditor) {
                 CreateEditorView(preselectedStyle: selectedStyle)
             }
@@ -398,7 +398,7 @@ struct CreateEditorView: View {
             }
             .padding(16)
         }
-        .navigationTitle("Create")
+        .navigationBarHidden(true)
         .sheet(isPresented: $showingDatePicker) {
             CalendarDatePickerView(
                 selectedDate: .constant(Date()),

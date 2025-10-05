@@ -59,7 +59,7 @@ struct AddMemoryView: View {
                                 .fill(.ultraThinMaterial)
                                 .overlay {
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(.blue.opacity(0.2), lineWidth: 1)
+                                .stroke(Branding.primaryWarm.opacity(0.3), lineWidth: 1)
                                 }
                         }
                     }
@@ -100,7 +100,7 @@ struct AddMemoryView: View {
                                 .fill(.ultraThinMaterial)
                                 .overlay {
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(.purple.opacity(0.2), lineWidth: 1)
+                                .stroke(Branding.accentWarm.opacity(0.3), lineWidth: 1)
                                 }
                         }
                     }

@@ -25,7 +25,7 @@ struct CalendarView: View {
                         Button(action: previousMonth) {
                             Image(systemName: "chevron.left")
                                 .font(.title2)
-                                .foregroundColor(.blue)
+                                .foregroundStyle(Branding.primaryWarm)
                         }
                         
                         Spacer()
@@ -39,7 +39,7 @@ struct CalendarView: View {
                         Button(action: nextMonth) {
                             Image(systemName: "chevron.right")
                                 .font(.title2)
-                                .foregroundColor(.blue)
+                                .foregroundStyle(Branding.primaryWarm)
                         }
                     }
                     .padding(.horizontal)
@@ -102,6 +102,11 @@ struct CalendarView: View {
                                 Image(systemName: "plus")
                                 Text("Add Memory")
                             }
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 10)
+                            .background(Branding.primaryGradient)
+                            .foregroundStyle(.white)
+                            .clipShape(Capsule())
                         }
                     }
                 }
@@ -571,7 +576,7 @@ struct CalendarDayView: View {
                         .background {
                             if isSelected {
                                 Circle()
-                                    .fill(.blue)
+                                    .fill(Branding.primaryWarm)
                             } else {
                                 Circle()
                                     .fill(.clear)
