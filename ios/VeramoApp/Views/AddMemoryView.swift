@@ -65,9 +65,10 @@ struct AddMemoryView: View {
                     }
                     .buttonStyle(.plain)
                     
-                    // AI Generate (Coming Soon)
+                    // AI Generate
                     Button(action: {
-                        // TODO: Implement AI generation
+                        NotificationCenter.default.post(name: NSNotification.Name("NavigateToCreateTab"), object: nil)
+                        dismiss()
                     }) {
                         HStack(spacing: 16) {
                             Image(systemName: "sparkles")
@@ -88,9 +89,6 @@ struct AddMemoryView: View {
                             Spacer()
                             
                             HStack(spacing: 4) {
-                                Text("Soon")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
                                 Image(systemName: "chevron.right")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
@@ -107,7 +105,7 @@ struct AddMemoryView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .disabled(true)
+                    .disabled(false)
                 }
                 .padding(.horizontal)
                 
