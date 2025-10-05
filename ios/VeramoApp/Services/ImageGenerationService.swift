@@ -56,14 +56,30 @@ class ImageGenerationService {
         
         request.httpBody = body
         
+        print("🚀 Making API request to: \(url)")
+        print("🚀 Request method: \(request.httpMethod ?? "unknown")")
+        print("🚀 Request headers: \(request.allHTTPHeaderFields ?? [:])")
+        print("🚀 Request body size: \(body.count) bytes")
+        print("🚀 Description: '\(description)'")
+        print("🚀 Style: '\(styleLabel ?? "none")'")
+        print("🚀 Images count: \(referenceImages.count)")
+        
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             
             guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ Invalid response type")
                 throw ImageGenerationError.invalidResponse
             }
             
+            print("🌐 API Response: Status \(httpResponse.statusCode)")
+            print("🌐 API Response Headers: \(httpResponse.allHeaderFields)")
+            
             guard httpResponse.statusCode == 200 else {
+                print("❌ API Error: \(httpResponse.statusCode)")
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("❌ API Error Response: \(responseString)")
+                }
                 throw ImageGenerationError.serverError(httpResponse.statusCode)
             }
             
