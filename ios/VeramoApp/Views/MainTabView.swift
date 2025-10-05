@@ -336,18 +336,10 @@ struct CreateEditorView: View {
                         }
                     }
                 }
-                .onChange(of: referenceItems) { oldItems, newItems in
+                .onChange(of: referenceItems) { _, newItems in
                     Task {
-                        // Only process NEW items (items that weren't in the old array)
-                        let newItemsOnly = newItems.filter { newItem in
-                            !oldItems.contains { oldItem in
-                                // Compare by identifier if available, or by a simple check
-                                return oldItem.itemIdentifier == newItem.itemIdentifier
-                            }
-                        }
-                        
-                        // Load newly added items until we reach 5 images
-                        for item in newItemsOnly.prefix(5) {
+                        // Process all new items, but only add up to 5 total images
+                        for item in newItems.prefix(5) {
                             if referenceImages.count >= 5 { break }
                             if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
                                 await MainActor.run {
@@ -489,9 +481,21 @@ struct CreateEditorView: View {
     }
     
     private func saveToPhotos() {
-        // Placeholder: in real implementation, save generated UIImage
-        // Here we do nothing besides a log
-        print("Save to device tapped")
+        guard let url = resultImageURL else { return }
+        
+        Task {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                if let image = UIImage(data: data) {
+                    await MainActor.run {
+                        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                        print("✅ Image saved to Photos")
+                    }
+                }
+            } catch {
+                print("❌ Failed to save image: \(error)")
+            }
+        }
     }
     
     private func referenceFromResult(url: URL) {
