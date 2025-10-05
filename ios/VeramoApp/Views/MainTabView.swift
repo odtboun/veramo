@@ -336,10 +336,18 @@ struct CreateEditorView: View {
                         }
                     }
                 }
-                .onChange(of: referenceItems) { _, items in
+                .onChange(of: referenceItems) { oldItems, newItems in
                     Task {
+                        // Only process NEW items (items that weren't in the old array)
+                        let newItemsOnly = newItems.filter { newItem in
+                            !oldItems.contains { oldItem in
+                                // Compare by identifier if available, or by a simple check
+                                return oldItem.itemIdentifier == newItem.itemIdentifier
+                            }
+                        }
+                        
                         // Load newly added items until we reach 5 images
-                        for item in items.prefix(5) {
+                        for item in newItemsOnly.prefix(5) {
                             if referenceImages.count >= 5 { break }
                             if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
                                 await MainActor.run {
