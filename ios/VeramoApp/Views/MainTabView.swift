@@ -64,6 +64,7 @@ struct MainTabView: View {
 // MARK: - Create Tab Views
 
 import PhotosUI
+import Supabase
 
 struct CreateTabView: View {
     private let columns = [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)]
@@ -285,15 +286,15 @@ struct CreateEditorView: View {
                             .foregroundColor(.secondary)
                     }
                     PhotosPicker(selection: $referenceItems, maxSelectionCount: 5, matching: .images) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "photo.on.rectangle.angled")
-                            Text(referenceImages.isEmpty ? "Add references" : "Add more references")
-                            Spacer()
-                        }
-                        .padding(12)
-                        .background(LinearGradient(colors: [.pink.opacity(0.25), .purple.opacity(0.25)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay { RoundedRectangle(cornerRadius: 12).stroke(.pink.opacity(0.5), lineWidth: 1) }
+                        Image(systemName: "plus")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(
+                                LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .shadow(color: .pink.opacity(0.25), radius: 6, x: 0, y: 4)
                     }
                     
                     if !referenceImages.isEmpty {
@@ -373,7 +374,11 @@ struct CreateEditorView: View {
                         .aspectRatio(1, contentMode: .fit)
                         
                         HStack(spacing: 12) {
-                            // Emphasized primary action
+                            // Secondary actions
+                            Button { saveToPhotos() } label: { labelCapsule(title: "Save", system: "square.and.arrow.down") }
+                            Button { referenceFromResult(url: url) } label: { labelCapsule(title: "Edit", system: "pencil") }
+                            
+                            // Emphasized primary action on the right
                             Button { showingDatePicker = true } label: {
                                 HStack(spacing: 8) {
                                     Image(systemName: "calendar")
@@ -387,14 +392,6 @@ struct CreateEditorView: View {
                                 .clipShape(Capsule())
                                 .shadow(color: .pink.opacity(0.3), radius: 6, x: 0, y: 4)
                             }
-                            
-                            // Secondary actions
-                            Button { saveToPhotos() } label: {
-                                labelCapsule(title: "Save", system: "square.and.arrow.down")
-                            }
-                            Button { referenceFromResult(url: url) } label: {
-                                labelCapsule(title: "Edit", system: "pencil")
-                            }
                         }
                     }
                 }
@@ -405,7 +402,9 @@ struct CreateEditorView: View {
         .sheet(isPresented: $showingDatePicker) {
             CalendarDatePickerView(
                 selectedDate: .constant(Date()),
-                onConfirm: { _ in showingDatePicker = false }
+                onConfirm: { date in
+                    Task { await addResultToCalendar(date: date) }
+                }
             )
         }
     }
@@ -461,6 +460,40 @@ struct CreateEditorView: View {
         referenceImages.remove(at: index)
         if referenceItems.indices.contains(index) {
             referenceItems.remove(at: index)
+        }
+    }
+    
+    private func addResultToCalendar(date: Date) async {
+        defer { showingDatePicker = false }
+        guard let url = resultImageURL else { return }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let image = UIImage(data: data), let imageData = image.jpegData(compressionQuality: 0.9) else { return }
+            
+            let userId = try await SupabaseService.shared.currentUserId()
+            let fileName = "\(userId)/generated_\(UUID().uuidString).jpg"
+            
+            try await SupabaseService.shared.client.storage
+                .from("user-uploads")
+                .upload(fileName, data: imageData, options: FileOptions(contentType: "image/jpeg"))
+            
+            let imageMetadata: [String: String] = [
+                "storage_path": fileName,
+                "file_name": fileName.components(separatedBy: "/").last ?? fileName,
+                "file_size": String(imageData.count),
+                "mime_type": "image/jpeg",
+                "width": String(Int(image.size.width)),
+                "height": String(Int(image.size.height))
+            ]
+            
+            try await SupabaseService.shared.addCalendarEntry(
+                imageData: imageMetadata,
+                scheduledDate: date
+            )
+            
+            NotificationCenter.default.post(name: NSNotification.Name("CalendarEntryAdded"), object: nil)
+        } catch {
+            print("❌ addResultToCalendar error: \(error)")
         }
     }
 }
