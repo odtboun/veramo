@@ -106,8 +106,9 @@ struct VeramoWidgetEntryView : View {
             if let localImage = loadLocalImage(from: url) {
                 Image(uiImage: localImage)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
+                    .scaledToFill()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
                     .ignoresSafeArea()
             } else {
                 // Fallback to system image if no local image
@@ -117,6 +118,9 @@ struct VeramoWidgetEntryView : View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
                     .ignoresSafeArea()
                     
                     Image(systemName: "heart.fill")
@@ -135,6 +139,9 @@ struct VeramoWidgetEntryView : View {
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
+                .scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
                 .ignoresSafeArea()
                 
                 Image(systemName: "heart.fill")
@@ -229,6 +236,7 @@ struct VeramoWidget: Widget {
             if let imageUrl = entry.partnerImage, let url = URL(string: imageUrl) {
                 VeramoWidgetEntryView(entry: entry)
                     .containerBackground(.clear, for: .widget)
+                    .contentMarginsDisabled()
             } else {
                 VeramoWidgetEntryView(entry: entry)
                     .containerBackground(
@@ -239,6 +247,7 @@ struct VeramoWidget: Widget {
                         ),
                         for: .widget
                     )
+                    .contentMarginsDisabled()
             }
         }
         .configurationDisplayName("Partner's Latest Memory")
