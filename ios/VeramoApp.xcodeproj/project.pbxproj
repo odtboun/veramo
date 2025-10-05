@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		167D33202E91EF5500FCAB5B /* Adapty in Frameworks */ = {isa = PBXBuildFile; productRef = 167D331F2E91EF5500FCAB5B /* Adapty */; };
+		167D33222E91EF5500FCAB5B /* AdaptyPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = 167D33212E91EF5500FCAB5B /* AdaptyPlugin */; };
+		167D33242E91EF5500FCAB5B /* AdaptyUI in Frameworks */ = {isa = PBXBuildFile; productRef = 167D33232E91EF5500FCAB5B /* AdaptyUI */; };
+		167D33262E91EF5500FCAB5B /* AdaptyUITesting in Frameworks */ = {isa = PBXBuildFile; productRef = 167D33252E91EF5500FCAB5B /* AdaptyUITesting */; };
 		16F250752E8FD5F100FF3A0F /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 16F250742E8FD5F100FF3A0F /* Auth */; };
 		16F250772E8FD5F100FF3A0F /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 16F250762E8FD5F100FF3A0F /* Functions */; };
 		16F250792E8FD5F100FF3A0F /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 16F250782E8FD5F100FF3A0F /* PostgREST */; };
@@ -36,6 +40,7 @@
 		2B0000000000000000000003 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000004 /* SupabaseService.swift */; };
 		2B0000000000000000000005 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000006 /* AuthViewModel.swift */; };
 		2B0000000000000000000007 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000008 /* AuthView.swift */; };
+		3B0000020000000000000001 /* Branding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0000010000000000000001 /* Branding.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +95,7 @@
 		2B0000000000000000000004 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		2B0000000000000000000006 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		2B0000000000000000000008 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		3B0000010000000000000001 /* Branding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Branding.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -120,11 +126,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				167D33262E91EF5500FCAB5B /* AdaptyUITesting in Frameworks */,
+				167D33242E91EF5500FCAB5B /* AdaptyUI in Frameworks */,
 				16F250792E8FD5F100FF3A0F /* PostgREST in Frameworks */,
 				16F250772E8FD5F100FF3A0F /* Functions in Frameworks */,
 				16F2507F2E8FD5F100FF3A0F /* Supabase in Frameworks */,
 				16F250752E8FD5F100FF3A0F /* Auth in Frameworks */,
 				16F2507D2E8FD5F100FF3A0F /* Storage in Frameworks */,
+				167D33202E91EF5500FCAB5B /* Adapty in Frameworks */,
+				167D33222E91EF5500FCAB5B /* AdaptyPlugin in Frameworks */,
 				16F2507B2E8FD5F100FF3A0F /* Realtime in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -189,6 +199,7 @@
 				1A0000000000000000000018 /* AdaptiveButton.swift */,
 				1A000000000000000000001A /* LiquidGlassButton.swift */,
 				1A000000000000000000001C /* FallbackButton.swift */,
+				3B0000010000000000000001 /* Branding.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -311,6 +322,7 @@
 			mainGroup = 1A0000000000000000000024;
 			packageReferences = (
 				16F250732E8FD5F100FF3A0F /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				167D331E2E91EF5500FCAB5B /* XCRemoteSwiftPackageReference "AdaptySDK-iOS" */,
 			);
 			productRefGroup = 1A0000000000000000000023 /* Products */;
 			projectDirPath = "";
@@ -364,6 +376,7 @@
 				1A0000000000000000000017 /* AdaptiveButton.swift in Sources */,
 				1A0000000000000000000019 /* LiquidGlassButton.swift in Sources */,
 				1A000000000000000000001B /* FallbackButton.swift in Sources */,
+				3B0000020000000000000001 /* Branding.swift in Sources */,
 				2B0000000000000000000001 /* SupabaseConfig.swift in Sources */,
 				2B0000000000000000000003 /* SupabaseService.swift in Sources */,
 				16F250832E90920B00FF3A0F /* PartnerConnectionView.swift in Sources */,
@@ -663,6 +676,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		167D331E2E91EF5500FCAB5B /* XCRemoteSwiftPackageReference "AdaptySDK-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/adaptyteam/AdaptySDK-iOS.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.11.0;
+			};
+		};
 		16F250732E8FD5F100FF3A0F /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/supabase-community/supabase-swift";
@@ -674,6 +695,26 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		167D331F2E91EF5500FCAB5B /* Adapty */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 167D331E2E91EF5500FCAB5B /* XCRemoteSwiftPackageReference "AdaptySDK-iOS" */;
+			productName = Adapty;
+		};
+		167D33212E91EF5500FCAB5B /* AdaptyPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 167D331E2E91EF5500FCAB5B /* XCRemoteSwiftPackageReference "AdaptySDK-iOS" */;
+			productName = AdaptyPlugin;
+		};
+		167D33232E91EF5500FCAB5B /* AdaptyUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 167D331E2E91EF5500FCAB5B /* XCRemoteSwiftPackageReference "AdaptySDK-iOS" */;
+			productName = AdaptyUI;
+		};
+		167D33252E91EF5500FCAB5B /* AdaptyUITesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 167D331E2E91EF5500FCAB5B /* XCRemoteSwiftPackageReference "AdaptySDK-iOS" */;
+			productName = AdaptyUITesting;
+		};
 		16F250742E8FD5F100FF3A0F /* Auth */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 16F250732E8FD5F100FF3A0F /* XCRemoteSwiftPackageReference "supabase-swift" */;

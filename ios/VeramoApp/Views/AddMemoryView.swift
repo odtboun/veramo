@@ -59,15 +59,16 @@ struct AddMemoryView: View {
                                 .fill(.ultraThinMaterial)
                                 .overlay {
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(.blue.opacity(0.2), lineWidth: 1)
+                                .stroke(Branding.primaryWarm.opacity(0.3), lineWidth: 1)
                                 }
                         }
                     }
                     .buttonStyle(.plain)
                     
-                    // AI Generate (Coming Soon)
+                    // AI Generate
                     Button(action: {
-                        // TODO: Implement AI generation
+                        NotificationCenter.default.post(name: NSNotification.Name("NavigateToCreateTab"), object: nil)
+                        dismiss()
                     }) {
                         HStack(spacing: 16) {
                             Image(systemName: "sparkles")
@@ -88,9 +89,6 @@ struct AddMemoryView: View {
                             Spacer()
                             
                             HStack(spacing: 4) {
-                                Text("Soon")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
                                 Image(systemName: "chevron.right")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
@@ -102,12 +100,12 @@ struct AddMemoryView: View {
                                 .fill(.ultraThinMaterial)
                                 .overlay {
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(.purple.opacity(0.2), lineWidth: 1)
+                                .stroke(Branding.accentWarm.opacity(0.3), lineWidth: 1)
                                 }
                         }
                     }
                     .buttonStyle(.plain)
-                    .disabled(true)
+                    .disabled(false)
                 }
                 .padding(.horizontal)
                 
@@ -259,10 +257,8 @@ struct CalendarDatePickerView: View {
                         .foregroundColor(.white)
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(.blue)
-                        }
+                        .background(Branding.primaryGradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal)

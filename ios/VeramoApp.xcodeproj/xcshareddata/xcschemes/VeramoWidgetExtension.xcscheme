@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "2B0000000000000000000002"
+               BlueprintIdentifier = "16F2508B2E91983D00FF3A0F"
                BuildableName = "VeramoWidgetExtension.appex"
                BlueprintName = "VeramoWidgetExtension"
                ReferencedContainer = "container:VeramoApp.xcodeproj">
@@ -43,7 +43,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2B0000000000000000000001"
+            BlueprintIdentifier = "1A0000000000000000000025"
             BuildableName = "VeramoApp.app"
             BlueprintName = "VeramoApp"
             ReferencedContainer = "container:VeramoApp.xcodeproj">
@@ -60,7 +60,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2B0000000000000000000001"
+            BlueprintIdentifier = "1A0000000000000000000025"
             BuildableName = "VeramoApp.app"
             BlueprintName = "VeramoApp"
             ReferencedContainer = "container:VeramoApp.xcodeproj">

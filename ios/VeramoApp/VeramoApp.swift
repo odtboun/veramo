@@ -1,8 +1,14 @@
 import SwiftUI
+import Adapty
 
 @main
 struct VeramoApp: App {
     @State private var authVM = AuthViewModel()
+    
+    init() {
+        Adapty.activate("public_live_t7iIHDB8.r2skT6vx7neXlUOITGFF")
+    }
+    
     var body: some Scene {
         WindowGroup {
             Group {

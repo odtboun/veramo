@@ -105,7 +105,7 @@ struct TodayView: View {
                                 // Cute decorative elements
                                 HStack(spacing: 8) {
                                     Circle()
-                                        .fill(.blue.opacity(0.3))
+                                    .fill(Branding.primaryWarm.opacity(0.3))
                                         .frame(width: 8, height: 8)
                                     Circle()
                                         .fill(.pink.opacity(0.3))
@@ -152,8 +152,8 @@ struct TodayView: View {
                             .frame(maxWidth: .infinity)
                             .background {
                                 RoundedRectangle(cornerRadius: 16)
-                                    .fill(.blue)
-                                    .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                                    .fill(Branding.primaryGradient)
+                                    .shadow(color: Branding.primaryWarm.opacity(0.3), radius: 8, x: 0, y: 4)
                             }
                         }
                         .buttonStyle(.plain)
