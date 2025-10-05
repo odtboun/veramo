@@ -440,11 +440,43 @@ struct CreateEditorView: View {
     private func generatePlaceholder() {
         isGenerating = true
         resultImageURL = nil
-        let seed = Int.random(in: 1...10_000)
-        let url = URL(string: "https://picsum.photos/seed/\(seed)/1024/1024")!
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            resultImageURL = url
-            isGenerating = false
+        
+        Task {
+            do {
+                let generatedImage = try await ImageGenerationService.shared.generateImage(
+                    description: promptText.isEmpty ? "A beautiful landscape" : promptText,
+                    styleLabel: preselectedStyle,
+                    referenceImages: referenceImages
+                )
+                
+                // Save the generated image to a temporary file
+                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("generated_\(UUID().uuidString).png")
+                
+                if let imageData = generatedImage.pngData() {
+                    try imageData.write(to: tempURL)
+                    
+                    await MainActor.run {
+                        resultImageURL = tempURL
+                        isGenerating = false
+                    }
+                } else {
+                    await MainActor.run {
+                        isGenerating = false
+                    }
+                }
+                
+            } catch {
+                print("❌ Image generation failed: \(error)")
+                
+                // Fallback to a placeholder on error
+                let seed = Int.random(in: 1...10_000)
+                let fallbackURL = URL(string: "https://picsum.photos/seed/\(seed)/1024/1024")!
+                
+                await MainActor.run {
+                    resultImageURL = fallbackURL
+                    isGenerating = false
+                }
+            }
         }
     }
     
