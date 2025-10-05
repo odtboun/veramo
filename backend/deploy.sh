@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-PROJECT_ID="veramo-473923"
+PROJECT_ID="astute-maxim-472510-m8"
 SERVICE_NAME="veramo-backend"
 REGION="us-east1"
 IMAGE_NAME="gcr.io/$PROJECT_ID/$SERVICE_NAME"

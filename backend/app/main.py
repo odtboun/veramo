@@ -1,88 +1,195 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
+from werkzeug.utils import secure_filename
 import os
+import io
 from datetime import datetime
-import uvicorn
+from PIL import Image, ImageDraw
+import tempfile
+import json
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="Veramo API",
-    description="Backend API for Veramo mobile app",
-    version="1.0.0"
-)
+# Initialize Flask app
+app = Flask(__name__)
+CORS(app)  # Enable CORS for mobile app
 
-# CORS middleware for mobile app
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Configure this properly for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Configuration
+UPLOAD_FOLDER = '/tmp/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
+MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB max file size
 
-# Pydantic models
-class HealthResponse(BaseModel):
-    status: str
-    timestamp: str
-    uptime: float
-    service: str
-    version: str
+# Ensure upload directory exists
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-class UserResponse(BaseModel):
-    id: int
-    name: str
-    email: str
-    created_at: str
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-class APIStatusResponse(BaseModel):
-    status: str
-    service: str
-    version: str
-    timestamp: str
+def create_solid_color_square(size=512, color=(128, 128, 128)):
+    """Create a solid color square image"""
+    img = Image.new('RGB', (size, size), color)
+    return img
+
+def process_first_image(image_path):
+    """Process the first uploaded image: rotate 90 degrees and crop to square"""
+    try:
+        with Image.open(image_path) as img:
+            # Convert to RGB if necessary
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # Rotate 90 degrees clockwise
+            rotated = img.rotate(-90, expand=True)
+            
+            # Get dimensions and calculate square crop
+            width, height = rotated.size
+            size = min(width, height)
+            
+            # Calculate crop box (center crop)
+            left = (width - size) // 2
+            top = (height - size) // 2
+            right = left + size
+            bottom = top + size
+            
+            # Crop to square
+            square_crop = rotated.crop((left, top, right, bottom))
+            
+            return square_crop
+    except Exception as e:
+        print(f"Error processing image: {e}")
+        return None
+
+def select_model_and_preprocess(description, images, style_label):
+    """
+    Preprocessing logic to decide what model to use and format inputs
+    This is a placeholder for future AI model integration
+    """
+    # Simple preprocessing logic
+    model_type = "default"
+    
+    # Determine model based on inputs
+    if len(images) > 0:
+        model_type = "image_based"
+    elif len(description) > 100:
+        model_type = "text_heavy"
+    elif style_label.lower() in ["artistic", "painting", "sketch"]:
+        model_type = "artistic"
+    
+    # Format inputs for the selected model
+    formatted_inputs = {
+        "model_type": model_type,
+        "description": description,
+        "style_label": style_label,
+        "image_count": len(images),
+        "processed_at": datetime.utcnow().isoformat()
+    }
+    
+    return formatted_inputs
+
+def generate_placeholder_image(description, images, style_label):
+    """
+    Placeholder function that simulates AI image generation
+    Returns a processed version of the first image or a solid color square
+    """
+    if images and len(images) > 0:
+        # Process the first image: rotate and crop
+        processed_img = process_first_image(images[0])
+        if processed_img:
+            return processed_img
+    
+    # Fallback: create solid color square
+    # Use style_label to determine color
+    color_map = {
+        "warm": (255, 200, 150),
+        "cool": (150, 200, 255),
+        "neutral": (200, 200, 200),
+        "vibrant": (255, 100, 100),
+        "muted": (150, 150, 150)
+    }
+    
+    color = color_map.get(style_label.lower(), (128, 128, 128))
+    return create_solid_color_square(512, color)
 
 # Routes
-@app.get("/", response_model=dict)
-async def root():
-    return {
+@app.route('/', methods=['GET'])
+def root():
+    return jsonify({
         "message": "Veramo Backend API is running!",
         "version": "1.0.0",
         "endpoints": {
             "health": "/health",
-            "api": "/api/status",
-            "user": "/api/user"
+            "generate": "/generate-image"
         }
-    }
+    })
 
-@app.get("/health", response_model=HealthResponse)
-async def health():
-    import time
-    return HealthResponse(
-        status="OK",
-        timestamp=datetime.utcnow().isoformat(),
-        uptime=time.time(),
-        service="Veramo API",
-        version="1.0.0"
-    )
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({
+        "status": "OK",
+        "timestamp": datetime.utcnow().isoformat(),
+        "service": "Veramo API",
+        "version": "1.0.0"
+    })
 
-@app.get("/api/status", response_model=APIStatusResponse)
-async def api_status():
-    return APIStatusResponse(
-        status="OK",
-        service="Veramo API",
-        version="1.0.0",
-        timestamp=datetime.utcnow().isoformat()
-    )
+@app.route('/generate-image', methods=['POST'])
+def generate_image():
+    """
+    Generate an image based on description, images, and style label
+    """
+    try:
+        # Get form data
+        description = request.form.get('description', '')
+        style_label = request.form.get('style_label', 'neutral')
+        
+        # Validate inputs
+        if not description.strip():
+            return jsonify({"error": "Description is required"}), 400
+        
+        # Handle uploaded images
+        images = []
+        if 'images' in request.files:
+            files = request.files.getlist('images')
+            
+            # Limit to 5 images
+            files = files[:5]
+            
+            for file in files:
+                if file and file.filename and allowed_file(file.filename):
+                    # Save file temporarily
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(UPLOAD_FOLDER, filename)
+                    file.save(file_path)
+                    images.append(file_path)
+        
+        # Preprocessing: select model and format inputs
+        formatted_inputs = select_model_and_preprocess(description, images, style_label)
+        
+        # Generate placeholder image
+        generated_img = generate_placeholder_image(description, images, style_label)
+        
+        # Save generated image to temporary file
+        output_path = os.path.join(UPLOAD_FOLDER, f"generated_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.png")
+        generated_img.save(output_path, 'PNG')
+        
+        # Clean up input images
+        for img_path in images:
+            try:
+                os.remove(img_path)
+            except:
+                pass
+        
+        # Return the generated image
+        return send_file(output_path, mimetype='image/png', as_attachment=True, download_name='generated_image.png')
+        
+    except Exception as e:
+        # Clean up any temporary files
+        try:
+            for img_path in images:
+                if os.path.exists(img_path):
+                    os.remove(img_path)
+        except:
+            pass
+        
+        return jsonify({"error": f"Image generation failed: {str(e)}"}), 500
 
-@app.get("/api/user", response_model=UserResponse)
-async def get_user():
-    return UserResponse(
-        id=1,
-        name="Veramo User",
-        email="user@veramo.app",
-        created_at=datetime.utcnow().isoformat()
-    )
-
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8080))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+if __name__ == '__main__':
+    port = int(os.getenv('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=True)
