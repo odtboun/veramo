@@ -148,9 +148,19 @@ struct CreateTabView: View {
                             .frame(height: featuredCardHeight)
                             .clipped()
                             .overlay {
+                                // Subtle glass
                                 RoundedRectangle(cornerRadius: 20)
                                     .fill(.ultraThinMaterial)
-                                    .opacity(0.2)
+                                    .opacity(0.15)
+                            }
+                            .overlay {
+                                // Stronger bottom gradient for title readability
+                                LinearGradient(
+                                    colors: [Color.black.opacity(0.65), Color.black.opacity(0.0)],
+                                    startPoint: .bottom,
+                                    endPoint: .top
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 20))
                             }
                             
                             VStack(alignment: .leading, spacing: 6) {
@@ -198,7 +208,12 @@ struct CreateTabView: View {
                                         .frame(height: 160)
                                         .clipped()
                                         .overlay {
-                                            LinearGradient(colors: [Color.black.opacity(0.0), Color.black.opacity(0.35)], startPoint: .top, endPoint: .bottom)
+                                            // Stronger bottom gradient for title readability
+                                            LinearGradient(
+                                                colors: [Color.black.opacity(0.0), Color.black.opacity(0.55)],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
                                         }
                                         
                                         Text(item.title)
