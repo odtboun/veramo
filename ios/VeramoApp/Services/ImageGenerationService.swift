@@ -6,6 +6,9 @@ class ImageGenerationService {
     
     private let baseURL = "https://veramo-backend-20729573701.us-east1.run.app"
     
+    // Temporary workaround - use a test endpoint
+    private let testMode = true
+    
     private init() {}
     
     func generateImage(
@@ -13,6 +16,12 @@ class ImageGenerationService {
         styleLabel: String? = nil,
         referenceImages: [UIImage] = []
     ) async throws -> UIImage {
+        
+        // Temporary workaround for testing
+        if testMode {
+            print("🧪 Test mode: Creating local placeholder image")
+            return createLocalPlaceholderImage(description: description, styleLabel: styleLabel, referenceImages: referenceImages)
+        }
         
         guard let url = URL(string: "\(baseURL)/generate-image") else {
             throw ImageGenerationError.invalidURL
@@ -95,6 +104,76 @@ class ImageGenerationService {
             } else {
                 throw ImageGenerationError.networkError(error)
             }
+        }
+    }
+    
+    private func createLocalPlaceholderImage(description: String, styleLabel: String?, referenceImages: [UIImage]) -> UIImage {
+        // Create a simple placeholder image that simulates the backend behavior
+        let size = CGSize(width: 512, height: 512)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        
+        return renderer.image { context in
+            // Background color based on style
+            let backgroundColor: UIColor
+            switch styleLabel?.lowercased() {
+            case "warm":
+                backgroundColor = UIColor(red: 1.0, green: 0.8, blue: 0.6, alpha: 1.0)
+            case "cool":
+                backgroundColor = UIColor(red: 0.6, green: 0.8, blue: 1.0, alpha: 1.0)
+            case "vibrant":
+                backgroundColor = UIColor(red: 1.0, green: 0.4, blue: 0.4, alpha: 1.0)
+            case "muted":
+                backgroundColor = UIColor(red: 0.6, green: 0.6, blue: 0.6, alpha: 1.0)
+            default:
+                backgroundColor = UIColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 1.0)
+            }
+            
+            context.cgContext.setFillColor(backgroundColor.cgColor)
+            context.cgContext.fill(CGRect(origin: .zero, size: size))
+            
+            // If we have reference images, simulate the rotation and cropping
+            if let firstImage = referenceImages.first {
+                // Simulate 90-degree rotation and square cropping
+                let imageSize = min(firstImage.size.width, firstImage.size.height)
+                let croppedRect = CGRect(
+                    x: (firstImage.size.width - imageSize) / 2,
+                    y: (firstImage.size.height - imageSize) / 2,
+                    width: imageSize,
+                    height: imageSize
+                )
+                
+                if let croppedImage = firstImage.cgImage?.cropping(to: croppedRect) {
+                    let rotatedImage = UIImage(cgImage: croppedImage, scale: firstImage.scale, orientation: .right)
+                    let scaledImage = rotatedImage.resized(to: size)
+                    scaledImage.draw(in: CGRect(origin: .zero, size: size))
+                }
+            } else {
+                // Add text overlay for no images case
+                let text = "Test Mode\n\(description.prefix(20))..."
+                let attributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 24, weight: .bold),
+                    .foregroundColor: UIColor.white
+                ]
+                
+                let textSize = text.size(withAttributes: attributes)
+                let textRect = CGRect(
+                    x: (size.width - textSize.width) / 2,
+                    y: (size.height - textSize.height) / 2,
+                    width: textSize.width,
+                    height: textSize.height
+                )
+                
+                text.draw(in: textRect, withAttributes: attributes)
+            }
+        }
+    }
+}
+
+extension UIImage {
+    func resized(to size: CGSize) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in
+            self.draw(in: CGRect(origin: .zero, size: size))
         }
     }
 }
