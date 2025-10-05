@@ -233,10 +233,9 @@ struct VeramoWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            if let imageUrl = entry.partnerImage, let url = URL(string: imageUrl) {
+            if let imageUrl = entry.partnerImage, let _ = URL(string: imageUrl) {
                 VeramoWidgetEntryView(entry: entry)
                     .containerBackground(.clear, for: .widget)
-                    .contentMarginsDisabled()
             } else {
                 VeramoWidgetEntryView(entry: entry)
                     .containerBackground(
@@ -247,7 +246,6 @@ struct VeramoWidget: Widget {
                         ),
                         for: .widget
                     )
-                    .contentMarginsDisabled()
             }
         }
         .configurationDisplayName("Partner's Latest Memory")
