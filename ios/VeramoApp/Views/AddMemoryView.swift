@@ -257,10 +257,8 @@ struct CalendarDatePickerView: View {
                         .foregroundColor(.white)
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(.blue)
-                        }
+                        .background(Branding.primaryGradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal)

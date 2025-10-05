@@ -40,6 +40,7 @@
 		2B0000000000000000000003 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000004 /* SupabaseService.swift */; };
 		2B0000000000000000000005 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000006 /* AuthViewModel.swift */; };
 		2B0000000000000000000007 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000008 /* AuthView.swift */; };
+		3B0000020000000000000001 /* Branding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0000010000000000000001 /* Branding.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -94,6 +95,7 @@
 		2B0000000000000000000004 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		2B0000000000000000000006 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		2B0000000000000000000008 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		3B0000010000000000000001 /* Branding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Branding.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -197,6 +199,7 @@
 				1A0000000000000000000018 /* AdaptiveButton.swift */,
 				1A000000000000000000001A /* LiquidGlassButton.swift */,
 				1A000000000000000000001C /* FallbackButton.swift */,
+				3B0000010000000000000001 /* Branding.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -373,6 +376,7 @@
 				1A0000000000000000000017 /* AdaptiveButton.swift in Sources */,
 				1A0000000000000000000019 /* LiquidGlassButton.swift in Sources */,
 				1A000000000000000000001B /* FallbackButton.swift in Sources */,
+				3B0000020000000000000001 /* Branding.swift in Sources */,
 				2B0000000000000000000001 /* SupabaseConfig.swift in Sources */,
 				2B0000000000000000000003 /* SupabaseService.swift in Sources */,
 				16F250832E90920B00FF3A0F /* PartnerConnectionView.swift in Sources */,

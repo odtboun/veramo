@@ -59,15 +59,32 @@ struct CalendarView: View {
 
                                 // Calendar days
                                 ForEach(daysInMonth, id: \.self) { date in
+                                    let entriesForDay = calendarEntries[dateKey(for: date)] ?? []
                                     CalendarDayView(
                                         date: date,
                                         isSelected: Calendar.current.isDate(date, inSameDayAs: selectedDate),
-                                        entries: calendarEntries[dateKey(for: date)] ?? []
+                                        entries: entriesForDay,
+                                        showGiftForFutureMine: shouldShowGift(for: date, entries: entriesForDay)
                                     ) {
                                         selectedDate = date
                                     }
                                 }
                             }
+                            .padding(.horizontal)
+                        }
+                        
+                        // Add to Calendar button under grid
+                        Button(action: { showingAddMemory = true }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "calendar.badge.plus")
+                                Text("Add to Calendar")
+                            }
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Branding.primaryGradient)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
                             .padding(.horizontal)
                         }
                     
@@ -94,21 +111,7 @@ struct CalendarView: View {
                 }
                 .navigationBarHidden(true)
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: {
-                            showingAddMemory = true
-                        }) {
-                            HStack {
-                                Image(systemName: "plus")
-                                Text("Add Memory")
-                            }
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 10)
-                            .background(Branding.primaryGradient)
-                            .foregroundStyle(.white)
-                            .clipShape(Capsule())
-                        }
-                    }
+                    // Removed trailing button; we now show a big CTA under the grid
                 }
                 .sheet(isPresented: $showingAddMemory) {
                     AddMemoryView()
@@ -164,6 +167,15 @@ struct CalendarView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: date)
+    }
+    
+    private func shouldShowGift(for date: Date, entries: [CalendarEntry]) -> Bool {
+        // Only for future dates
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) || date < Date() { return false }
+        // If there are entries and all are mine (no partner entries), show gift
+        guard !entries.isEmpty else { return false }
+        return !entries.contains(where: { $0.isFromPartner })
     }
     
         private func loadCalendarData() async {
@@ -553,12 +565,17 @@ struct CalendarDayView: View {
     let date: Date
     let isSelected: Bool
     let entries: [CalendarEntry]
+    let showGiftForFutureMine: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             VStack(spacing: 4) {
-                if !entries.isEmpty {
+                if showGiftForFutureMine {
+                    Text("🎁")
+                        .font(.system(size: 18))
+                        .frame(width: 40, height: 40)
+                } else if !entries.isEmpty {
                     // Show partner's latest upload, or your own if no partner uploads
                     let partnerEntries = entries.filter { $0.isFromPartner }
                     let entryToShow = partnerEntries.first ?? entries.first
@@ -574,7 +591,7 @@ struct CalendarDayView: View {
                         .foregroundColor(isSelected ? .white : .primary)
                         .frame(width: 40, height: 40)
                         .background {
-                            if isSelected {
+                        if isSelected {
                                 Circle()
                                     .fill(Branding.primaryWarm)
                             } else {
