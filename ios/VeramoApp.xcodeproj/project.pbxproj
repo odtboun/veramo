@@ -38,6 +38,7 @@
 		1A000000000000000000001B /* FallbackButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000001C /* FallbackButton.swift */; };
 		2B0000000000000000000001 /* SupabaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000002 /* SupabaseConfig.swift */; };
 		2B0000000000000000000003 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000004 /* SupabaseService.swift */; };
+		5D0F8B83E1B044D18CB0F106 /* ImageGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A4FE65ED8F4878B13F8092 /* ImageGenerationService.swift */; };
 		2B0000000000000000000005 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000006 /* AuthViewModel.swift */; };
 		2B0000000000000000000007 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000008 /* AuthView.swift */; };
 		3B0000020000000000000001 /* Branding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0000010000000000000001 /* Branding.swift */; };
@@ -93,6 +94,7 @@
 		1A000000000000000000001D /* VeramoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VeramoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B0000000000000000000002 /* SupabaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseConfig.swift; sourceTree = "<group>"; };
 		2B0000000000000000000004 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		A5A4FE65ED8F4878B13F8092 /* ImageGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGenerationService.swift; sourceTree = "<group>"; };
 		2B0000000000000000000006 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		2B0000000000000000000008 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		3B0000010000000000000001 /* Branding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Branding.swift; sourceTree = "<group>"; };
@@ -237,6 +239,7 @@
 			isa = PBXGroup;
 			children = (
 				2B0000000000000000000004 /* SupabaseService.swift */,
+				A5A4FE65ED8F4878B13F8092 /* ImageGenerationService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -379,6 +382,7 @@
 				3B0000020000000000000001 /* Branding.swift in Sources */,
 				2B0000000000000000000001 /* SupabaseConfig.swift in Sources */,
 				2B0000000000000000000003 /* SupabaseService.swift in Sources */,
+				5D0F8B83E1B044D18CB0F106 /* ImageGenerationService.swift in Sources */,
 				16F250832E90920B00FF3A0F /* PartnerConnectionView.swift in Sources */,
 				16F250872E912B5800FF3A0F /* SquareCropView.swift in Sources */,
 				16F250892E912B5900FF3A0F /* AddMemoryView.swift in Sources */,
