@@ -507,21 +507,29 @@ struct CreateEditorView: View {
     }
     
     private func referenceFromResult(url: URL) {
+        // Set flag to prevent onChange from interfering
+        isManuallyRemoving = true
+        
         // Clear existing references and set the result as the reference
         Task {
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 if let img = UIImage(data: data) {
                     await MainActor.run {
-                        // Clear existing references first
+                        // Clear existing references and add result in one operation
                         referenceImages.removeAll()
                         referenceItems.removeAll()
-                        // Add the result image as reference
                         referenceImages.append(img)
+                        
+                        // Reset flag after operation is complete
+                        isManuallyRemoving = false
                     }
                 }
             } catch {
                 print("Failed to load result for reference: \(error)")
+                await MainActor.run {
+                    isManuallyRemoving = false
+                }
             }
         }
     }
