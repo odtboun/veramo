@@ -143,7 +143,20 @@ class ImageGenerationService {
                 )
                 
                 if let croppedImage = firstImage.cgImage?.cropping(to: croppedRect) {
-                    let rotatedImage = UIImage(cgImage: croppedImage, scale: firstImage.scale, orientation: .right)
+                    // Create a UIImage from the cropped CGImage
+                    let croppedUIImage = UIImage(cgImage: croppedImage, scale: firstImage.scale, orientation: firstImage.imageOrientation)
+                    
+                    // Actually rotate the image 90 degrees using Core Graphics
+                    let rotatedSize = CGSize(width: croppedUIImage.size.height, height: croppedUIImage.size.width)
+                    let rotatedRenderer = UIGraphicsImageRenderer(size: rotatedSize)
+                    let rotatedImage = rotatedRenderer.image { context in
+                        context.cgContext.translateBy(x: rotatedSize.width / 2, y: rotatedSize.height / 2)
+                        context.cgContext.rotate(by: .pi / 2) // 90 degrees
+                        context.cgContext.translateBy(x: -croppedUIImage.size.width / 2, y: -croppedUIImage.size.height / 2)
+                        croppedUIImage.draw(in: CGRect(origin: .zero, size: croppedUIImage.size))
+                    }
+                    
+                    // Scale to final size and draw
                     let scaledImage = rotatedImage.resized(to: size)
                     scaledImage.draw(in: CGRect(origin: .zero, size: size))
                 }

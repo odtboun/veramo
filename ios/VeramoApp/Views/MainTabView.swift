@@ -338,9 +338,13 @@ struct CreateEditorView: View {
                 }
                 .onChange(of: referenceItems) { _, newItems in
                     Task {
-                        // Process all new items, but only add up to 5 total images
+                        // Clear existing images and replace with new selection
+                        await MainActor.run {
+                            referenceImages.removeAll()
+                        }
+                        
+                        // Process new items (up to 5)
                         for item in newItems.prefix(5) {
-                            if referenceImages.count >= 5 { break }
                             if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
                                 await MainActor.run {
                                     if referenceImages.count < 5 { referenceImages.append(img) }
@@ -499,13 +503,17 @@ struct CreateEditorView: View {
     }
     
     private func referenceFromResult(url: URL) {
-        // Set the result as the reference by downloading briefly
+        // Clear existing references and set the result as the reference
         Task {
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 if let img = UIImage(data: data) {
                     await MainActor.run {
-                        if referenceImages.count < 5 { referenceImages.append(img) }
+                        // Clear existing references first
+                        referenceImages.removeAll()
+                        referenceItems.removeAll()
+                        // Add the result image as reference
+                        referenceImages.append(img)
                     }
                 }
             } catch {
