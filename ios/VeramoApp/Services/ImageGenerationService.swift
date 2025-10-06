@@ -4,7 +4,7 @@ import UIKit
 class ImageGenerationService {
     static let shared = ImageGenerationService()
     
-    private let baseURL = "https://veramo-backend-20729573701.us-east1.run.app"
+    private let baseURL = "https://veramo-backend-228424037435.us-east1.run.app"
     
     // Use real API endpoint
     private let testMode = false
