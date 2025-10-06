@@ -252,6 +252,7 @@ struct CreateEditorView: View {
     @State private var isGenerating: Bool = false
     @State private var resultImageURL: URL? = nil
     @State private var showingDatePicker: Bool = false
+    @State private var isManuallyRemoving: Bool = false
     
     var body: some View {
         ScrollView {
@@ -337,6 +338,9 @@ struct CreateEditorView: View {
                     }
                 }
                 .onChange(of: referenceItems) { _, newItems in
+                    // Skip if we're manually removing items to avoid flash
+                    guard !isManuallyRemoving else { return }
+                    
                     Task {
                         // Clear existing images and replace with new selection
                         await MainActor.run {
@@ -524,9 +528,18 @@ struct CreateEditorView: View {
     
     private func removeReference(at index: Int) {
         guard referenceImages.indices.contains(index) else { return }
+        
+        // Set flag to prevent onChange from clearing all images
+        isManuallyRemoving = true
+        
         referenceImages.remove(at: index)
         if referenceItems.indices.contains(index) {
             referenceItems.remove(at: index)
+        }
+        
+        // Reset flag after a brief delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            isManuallyRemoving = false
         }
     }
     
