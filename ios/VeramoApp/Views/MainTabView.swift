@@ -252,6 +252,7 @@ struct CreateEditorView: View {
     @State private var isGenerating: Bool = false
     @State private var resultImageURL: URL? = nil
     @State private var showingDatePicker: Bool = false
+    @State private var selectedCalendarDate: Date = Date()
     @State private var isManuallyRemoving: Bool = false
     
     var body: some View {
@@ -424,7 +425,7 @@ struct CreateEditorView: View {
         .navigationBarHidden(true)
         .sheet(isPresented: $showingDatePicker) {
             CalendarDatePickerView(
-                selectedDate: .constant(Date()),
+                selectedDate: $selectedCalendarDate,
                 onConfirm: { date in
                     Task { await addResultToCalendar(date: date) }
                 }
