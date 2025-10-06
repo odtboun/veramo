@@ -6,8 +6,8 @@ class ImageGenerationService {
     
     private let baseURL = "https://veramo-backend-20729573701.us-east1.run.app"
     
-    // Temporary workaround - use a test endpoint
-    private let testMode = true
+    // Use real API endpoint
+    private let testMode = false
     
     private init() {}
     
