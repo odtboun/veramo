@@ -19,15 +19,12 @@
 			</array>
 		</dict>
 	</array>
-	<key>NSExtension</key>
-	<dict>
-		<key>NSExtensionPointIdentifier</key>
-		<string>com.apple.widgetkit-extension</string>
-	</dict>
 	<key>AppGroups</key>
 	<array>
 		<string>group.com.omerdemirtas.veramo</string>
 	</array>
+	<key>CFBundleVersion</key>
+	<string>2</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Veramo needs access to save generated images to your Photos library.</string>
 </dict>
