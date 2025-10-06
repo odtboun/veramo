@@ -145,6 +145,11 @@ struct SettingsView: View {
                     SettingsRow(icon: "lock.fill", title: "Privacy", action: {})
                     SettingsRow(icon: "questionmark.circle.fill", title: "Help & Support", action: {})
                     SettingsRow(icon: "info.circle.fill", title: "About", action: {})
+                    // Temporary: Reset onboarding for testing (local only)
+                    SettingsRow(icon: "arrow.counterclockwise", title: "Reset Onboarding (Temp)") {
+                        // Clear local flag; remote field doesn't exist yet
+                        UserDefaults.standard.set(false, forKey: "onboarding_completed")
+                    }
                 }
                 
                 // Account Section
