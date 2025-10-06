@@ -358,6 +358,44 @@ final class SupabaseService {
         print("🌐 Public URL: \(publicURL.absoluteString)")
         return publicURL.absoluteString
     }
+
+    // MARK: - Onboarding Status
+    func isOnboardingCompleted() async -> Bool {
+        // Local fallback for immediate gating
+        if UserDefaults.standard.bool(forKey: "onboarding_completed") {
+            return true
+        }
+        do {
+            let userId = try await currentUserId()
+            struct Row: Decodable { let onboarding_completed: Bool? }
+            let row: Row = try await client
+                .from("profiles")
+                .select("onboarding_completed")
+                .eq("id", value: userId)
+                .single()
+                .execute().value
+            let completed = row.onboarding_completed ?? false
+            if completed { UserDefaults.standard.set(true, forKey: "onboarding_completed") }
+            return completed
+        } catch {
+            print("⚠️ Onboarding status check failed, defaulting to local flag: \(error)")
+            return UserDefaults.standard.bool(forKey: "onboarding_completed")
+        }
+    }
+
+    func setOnboardingCompleted() async {
+        UserDefaults.standard.set(true, forKey: "onboarding_completed")
+        do {
+            let userId = try await currentUserId()
+            _ = try await client
+                .from("profiles")
+                .update(["onboarding_completed": true])
+                .eq("id", value: userId)
+                .execute()
+        } catch {
+            print("⚠️ Failed to persist onboarding completion to Supabase: \(error)")
+        }
+    }
 }
 
     struct CalendarEntry {

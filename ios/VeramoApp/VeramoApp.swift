@@ -13,7 +13,7 @@ struct VeramoApp: App {
         WindowGroup {
             Group {
                 if authVM.state == .signedIn {
-                    ContentView(authVM: authVM)
+                    RootAfterAuthView(authVM: authVM)
                 } else {
                     AuthView(authVM: authVM)
                 }
@@ -25,5 +25,24 @@ struct VeramoApp: App {
                 Task { try? await SupabaseService.shared.client.auth.session(from: url) }
             }
         }
+    }
+}
+
+struct RootAfterAuthView: View {
+    @Bindable var authVM: AuthViewModel
+    @State private var showOnboarding: Bool = false
+    
+    var body: some View {
+        ContentView(authVM: authVM)
+            .task {
+                let completed = await SupabaseService.shared.isOnboardingCompleted()
+                showOnboarding = !completed
+            }
+            .fullScreenCover(isPresented: $showOnboarding) {
+                OnboardingFlow(partnerAlreadyOnboarded: false) {
+                    Task { await SupabaseService.shared.setOnboardingCompleted() }
+                    showOnboarding = false
+                }
+            }
     }
 }
