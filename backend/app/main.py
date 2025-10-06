@@ -7,6 +7,8 @@ from datetime import datetime
 from PIL import Image, ImageDraw
 import tempfile
 import json
+import fal_client
+import requests
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -84,6 +86,60 @@ def select_model_and_preprocess(description, images, style_label):
     
     return formatted_inputs
 
+def generate_with_fal_ai(description, images, style_label):
+    """
+    Generate image using fal.ai FLUX Pro Kontext Multi
+    """
+    try:
+        # Configure fal.ai client
+        fal_client.api_key = os.getenv('FAL_KEY')
+        
+        # Upload images to fal.ai storage and get URLs
+        image_urls = []
+        for img_path in images:
+            with open(img_path, 'rb') as f:
+                file_data = f.read()
+            
+            # Upload to fal.ai storage
+            upload_result = fal_client.storage.upload(file_data)
+            image_urls.append(upload_result['url'])
+        
+        # Create enhanced prompt with style
+        enhanced_prompt = f"{description} (style: {style_label})"
+        
+        # Prepare the request payload
+        payload = {
+            "prompt": enhanced_prompt,
+            "image_urls": image_urls,
+            "sync_mode": True,  # Wait for completion
+            "output_format": "png",
+            "safety_tolerance": "4",
+            "enhance_prompt": True,
+            "aspect_ratio": "1:1",
+            "num_images": 1
+        }
+        
+        print(f"🚀 Calling fal.ai with payload: {json.dumps(payload, indent=2)}")
+        
+        # Call fal.ai API
+        result = fal_client.subscribe("fal-ai/flux-pro/kontext/multi", payload)
+        
+        # Download the generated image
+        if result and 'data' in result and 'images' in result['data']:
+            image_url = result['data']['images'][0]['url']
+            response = requests.get(image_url)
+            if response.status_code == 200:
+                return Image.open(io.BytesIO(response.content))
+        
+        # Fallback to placeholder if fal.ai fails
+        print("⚠️ fal.ai failed, falling back to placeholder")
+        return generate_placeholder_image(description, images, style_label)
+        
+    except Exception as e:
+        print(f"❌ fal.ai error: {e}")
+        # Fallback to placeholder
+        return generate_placeholder_image(description, images, style_label)
+
 def generate_placeholder_image(description, images, style_label):
     """
     Placeholder function that simulates AI image generation
@@ -159,11 +215,15 @@ def generate_image():
                     file.save(file_path)
                     images.append(file_path)
         
-        # Preprocessing: select model and format inputs
-        formatted_inputs = select_model_and_preprocess(description, images, style_label)
+        # Check if we should use fal.ai or placeholder
+        use_fal_ai = len(images) >= 2 and description.strip()
         
-        # Generate placeholder image
-        generated_img = generate_placeholder_image(description, images, style_label)
+        if use_fal_ai:
+            # Use fal.ai FLUX Pro Kontext Multi
+            generated_img = generate_with_fal_ai(description, images, style_label)
+        else:
+            # Use placeholder function
+            generated_img = generate_placeholder_image(description, images, style_label)
         
         # Save generated image to temporary file
         output_path = os.path.join(UPLOAD_FOLDER, f"generated_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.png")
