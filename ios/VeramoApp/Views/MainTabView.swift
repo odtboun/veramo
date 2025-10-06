@@ -507,9 +507,6 @@ struct CreateEditorView: View {
     }
     
     private func referenceFromResult(url: URL) {
-        // Set flag to prevent onChange from interfering
-        isManuallyRemoving = true
-        
         // Clear existing references and set the result as the reference
         Task {
             do {
@@ -520,16 +517,10 @@ struct CreateEditorView: View {
                         referenceImages.removeAll()
                         referenceItems.removeAll()
                         referenceImages.append(img)
-                        
-                        // Reset flag after operation is complete
-                        isManuallyRemoving = false
                     }
                 }
             } catch {
                 print("Failed to load result for reference: \(error)")
-                await MainActor.run {
-                    isManuallyRemoving = false
-                }
             }
         }
     }
