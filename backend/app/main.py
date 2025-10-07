@@ -172,8 +172,11 @@ def generate_with_fal_ai(description, images, style_label):
         style_normalized = (style_label or "").strip().lower()
         flux_styles = {"claymotion", "fantasy illustration", "gothic victorian", "steampunk"}
         if len(image_urls) > 0:
-            # Use Gemini edit when at least one reference image is provided
-            model_id = "fal-ai/gemini-25-flash-image/edit"
+            # With references: default to Gemini edit, but for exactly 1 ref + special styles use FLUX Kontext
+            if len(image_urls) == 1 and style_normalized in flux_styles:
+                model_id = "fal-ai/flux-pro/kontext"
+            else:
+                model_id = "fal-ai/gemini-25-flash-image/edit"
         else:
             # Text-only: prefer FLUX for certain styles, otherwise Gemini text-to-image
             if style_normalized in flux_styles:
