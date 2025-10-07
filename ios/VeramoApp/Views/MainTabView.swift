@@ -1,9 +1,12 @@
 import SwiftUI
 import Observation
+import Adapty
+import AdaptyUI
 
 struct MainTabView: View {
     @State private var selectedTab = 0
     @Bindable var authVM: AuthViewModel
+    @ObservedObject var subscriptionManager: SubscriptionManager
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -16,7 +19,7 @@ struct MainTabView: View {
                 .tag(0)
             
             // Create (AI Image Generation)
-            CreateTabView()
+            CreateTabView(subscriptionManager: subscriptionManager)
                 .tabItem {
                     Image(systemName: "sparkles")
                     Text("Create")
@@ -58,7 +61,7 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView(authVM: AuthViewModel())
+    MainTabView(authVM: AuthViewModel(), subscriptionManager: SubscriptionManager())
 }
 
 // MARK: - Create Tab Views
@@ -67,6 +70,7 @@ import PhotosUI
 import Supabase
 
 struct CreateTabView: View {
+    @ObservedObject var subscriptionManager: SubscriptionManager
     private let columns = [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)]
     @State private var navigateToEditor: Bool = false
     @State private var selectedStyle: String? = nil
@@ -75,51 +79,23 @@ struct CreateTabView: View {
     
     private let featuredTitle = "Create from Scratch"
     
-    private let cards: [(title: String, cover: String)] = [
-        ("4-panel comic", "https://picsum.photos/seed/comic/800/800"),
-        ("Trading card", "https://picsum.photos/seed/card/800/800"),
-        ("Dream trip locations", "https://picsum.photos/seed/trip/800/800"),
-        ("Anime style", "https://picsum.photos/seed/anime/800/800"),
-        ("Oil painting", "https://picsum.photos/seed/oil/800/800"),
-        ("Watercolor", "https://picsum.photos/seed/water/800/800"),
-        ("Pixel art", "https://picsum.photos/seed/pixel/800/800"),
-        ("Cyberpunk neon", "https://picsum.photos/seed/neon/800/800"),
-        ("Baroque oil", "https://picsum.photos/seed/baroque/800/800"),
-        ("Cartoon", "https://picsum.photos/seed/cartoon/800/800"),
-        ("Vaporwave 90s", "https://picsum.photos/seed/vapor/800/800"),
-        ("Pop surrealism", "https://picsum.photos/seed/surreal/800/800"),
-        ("Origami", "https://picsum.photos/seed/origami/800/800"),
-        ("Psychedelic", "https://picsum.photos/seed/psy/800/800"),
-        ("Manga", "https://picsum.photos/seed/manga/800/800"),
-        ("Risograph", "https://picsum.photos/seed/riso/800/800"),
-        ("Abstract", "https://picsum.photos/seed/abstract/800/800"),
-        ("Cubism", "https://picsum.photos/seed/cubism/800/800"),
-        ("Impressionism", "https://picsum.photos/seed/impress/800/800"),
-        ("Surrealism", "https://picsum.photos/seed/surreal2/800/800"),
-        ("Futuristic", "https://picsum.photos/seed/future/800/800"),
-        ("Silhouette photo", "https://picsum.photos/seed/sil/800/800"),
-        ("Studio lighting", "https://picsum.photos/seed/studio/800/800"),
-        ("B&W photo", "https://picsum.photos/seed/bw/800/800"),
-        ("Bird's-eye view", "https://picsum.photos/seed/birds/800/800"),
-        ("Worm's-eye view", "https://picsum.photos/seed/worm/800/800"),
-        ("Dutch angle", "https://picsum.photos/seed/dutch/800/800"),
-        ("Long exposure", "https://picsum.photos/seed/long/800/800"),
-        ("Kinetic art", "https://picsum.photos/seed/kinetic/800/800"),
-        ("ASCII art", "https://picsum.photos/seed/ascii/800/800"),
-        ("Minimalist line art", "https://picsum.photos/seed/line/800/800"),
-        ("Fantasy storybook", "https://picsum.photos/seed/fantasy/800/800"),
-        ("Classic comic", "https://picsum.photos/seed/comic2/800/800"),
-        ("Retro pixels", "https://picsum.photos/seed/retro/800/800"),
-        ("Glitch art", "https://picsum.photos/seed/glitch/800/800"),
-        ("Art deco", "https://picsum.photos/seed/deco/800/800"),
-        ("Pop art", "https://picsum.photos/seed/pop/800/800"),
-        ("1950s pop", "https://picsum.photos/seed/pop50/800/800"),
-        ("80s synthwave", "https://picsum.photos/seed/synth/800/800"),
-        ("Portrait sketch", "https://picsum.photos/seed/sketch/800/800"),
-        ("Digital 3D render", "https://picsum.photos/seed/render/800/800"),
-        ("Pastel drawing", "https://picsum.photos/seed/pastel/800/800"),
-        ("Ink wash", "https://picsum.photos/seed/ink/800/800")
-    ]
+    private let cards: [(title: String, coverName: String)] = {
+        // Load local covers from bundled folder; map filename to a readable short title
+        let base = Bundle.main.bundleURL.appendingPathComponent("style-covers", isDirectory: true)
+        let fm = FileManager.default
+        let files = (try? fm.contentsOfDirectory(at: base, includingPropertiesForKeys: nil)) ?? []
+        let imageFiles = files.filter { ["png", "jpg", "jpeg", "webp"].contains($0.pathExtension.lowercased()) }
+        let items: [(String, String)] = imageFiles.map { url in
+            let raw = url.deletingPathExtension().lastPathComponent
+            let short = raw
+                .replacingOccurrences(of: "_", with: " ")
+                .replacingOccurrences(of: "-", with: " ")
+                .capitalized
+            return (short, "style-covers/" + url.lastPathComponent)
+        }
+        // Fallback to empty if none found
+        return items.sorted { $0.0.localizedCaseInsensitiveCompare($1.0) == .orderedAscending }
+    }()
     
     var body: some View {
         NavigationStack {
@@ -191,20 +167,9 @@ struct CreateTabView: View {
                             } label: {
                                 VStack(alignment: .leading, spacing: 8) {
                                     ZStack(alignment: .bottomLeading) {
-                                        AsyncImage(url: URL(string: item.cover)) { phase in
-                                            switch phase {
-                                            case .empty:
-                                                Color.gray.opacity(0.1)
-                                            case .success(let img):
-                                                img
-                                                    .resizable()
-                                                    .scaledToFill()
-                                            case .failure:
-                                                Color.gray.opacity(0.2)
-                                            @unknown default:
-                                                Color.gray.opacity(0.2)
-                                            }
-                                        }
+                                        Image(uiImage: UIImage(named: item.coverName) ?? UIImage())
+                                            .resizable()
+                                            .scaledToFill()
                                         .frame(height: 160)
                                         .clipped()
                                         .overlay {
@@ -238,7 +203,7 @@ struct CreateTabView: View {
             }
             .navigationBarHidden(true)
             .navigationDestination(isPresented: $navigateToEditor) {
-                CreateEditorView(preselectedStyle: selectedStyle)
+                CreateEditorView(preselectedStyle: selectedStyle, subscriptionManager: subscriptionManager)
             }
         }
     }
@@ -246,6 +211,7 @@ struct CreateTabView: View {
 
 struct CreateEditorView: View {
     let preselectedStyle: String?
+    @ObservedObject var subscriptionManager: SubscriptionManager
     @State private var promptText: String = ""
     @State private var referenceItems: [PhotosPickerItem] = []
     @State private var referenceImages: [UIImage] = []
@@ -361,7 +327,12 @@ struct CreateEditorView: View {
                 
                 // Generate button
                 Button {
-                    generatePlaceholder()
+                    Task {
+                        let hasAccess = await subscriptionManager.presentPaywallIfNeeded()
+                        if hasAccess {
+                            generatePlaceholder()
+                        }
+                    }
                 } label: {
                     HStack {
                         if isGenerating { ProgressView().tint(.white) }
@@ -403,7 +374,14 @@ struct CreateEditorView: View {
                             Button { referenceFromResult(url: url) } label: { labelCapsule(title: "Edit", system: "pencil") }
                             
                             // Emphasized primary action on the right
-                            Button { showingDatePicker = true } label: {
+                            Button { 
+                                Task {
+                                    let hasAccess = await subscriptionManager.presentPaywallIfNeeded()
+                                    if hasAccess {
+                                        showingDatePicker = true
+                                    }
+                                }
+                            } label: {
                                 HStack(spacing: 8) {
                                     Image(systemName: "calendar")
                                     Text("Add to calendar")
@@ -423,14 +401,15 @@ struct CreateEditorView: View {
             .padding(16)
         }
         .navigationBarHidden(true)
-        .sheet(isPresented: $showingDatePicker) {
-            CalendarDatePickerView(
-                selectedDate: $selectedCalendarDate,
-                onConfirm: { date in
-                    Task { await addResultToCalendar(date: date) }
+                .sheet(isPresented: $showingDatePicker) {
+                    CalendarDatePickerView(
+                        selectedDate: $selectedCalendarDate,
+                        subscriptionManager: subscriptionManager,
+                        onConfirm: { date in
+                            Task { await addResultToCalendar(date: date) }
+                        }
+                    )
                 }
-            )
-        }
     }
     
     private func labelCapsule(title: String, system: String) -> some View {

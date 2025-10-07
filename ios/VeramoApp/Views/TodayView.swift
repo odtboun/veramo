@@ -171,7 +171,7 @@ struct TodayView: View {
                     }
                 }
             .sheet(isPresented: $showingAddMemory) {
-                AddMemoryView()
+                AddMemoryView(subscriptionManager: SubscriptionManager())
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SmartRefreshRequested"))) { _ in
                 Task { await checkForNewEntries() }

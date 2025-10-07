@@ -1,9 +1,12 @@
 import SwiftUI
 import PhotosUI
 import Supabase
+import Adapty
+import AdaptyUI
 
 struct AddMemoryView: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject var subscriptionManager: SubscriptionManager
     @State private var selectedDate = Date()
     @State private var showingDatePicker = false
     @State private var photoSelection: PhotosPickerItem?
@@ -141,6 +144,7 @@ struct AddMemoryView: View {
         .sheet(isPresented: $showingDatePicker) {
             CalendarDatePickerView(
                 selectedDate: $selectedDate,
+                subscriptionManager: subscriptionManager,
                 onConfirm: { date in
                     Task { await addToCalendar(date: date) }
                 }
@@ -231,6 +235,7 @@ struct AddMemoryView: View {
 
 struct CalendarDatePickerView: View {
     @Binding var selectedDate: Date
+    @ObservedObject var subscriptionManager: SubscriptionManager
     let onConfirm: (Date) -> Void
     @Environment(\.dismiss) private var dismiss
     
@@ -251,7 +256,14 @@ struct CalendarDatePickerView: View {
                 .datePickerStyle(.graphical)
                 .padding()
                 
-                Button(action: { onConfirm(selectedDate) }) {
+                Button(action: { 
+                    Task {
+                        let hasAccess = await subscriptionManager.presentPaywallIfNeeded()
+                        if hasAccess {
+                            onConfirm(selectedDate)
+                        }
+                    }
+                }) {
                     Text("Add to Calendar")
                         .font(.headline)
                         .foregroundColor(.white)
@@ -277,5 +289,5 @@ struct CalendarDatePickerView: View {
 }
 
 #Preview {
-    AddMemoryView()
+    AddMemoryView(subscriptionManager: SubscriptionManager())
 }

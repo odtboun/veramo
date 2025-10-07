@@ -114,7 +114,7 @@ struct CalendarView: View {
                     // Removed trailing button; we now show a big CTA under the grid
                 }
                 .sheet(isPresented: $showingAddMemory) {
-                    AddMemoryView()
+                    AddMemoryView(subscriptionManager: SubscriptionManager())
                 }
                 .onAppear {
                     Task { 

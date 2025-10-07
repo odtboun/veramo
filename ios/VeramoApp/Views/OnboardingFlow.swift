@@ -27,7 +27,7 @@ struct OnboardingFlow: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
         }
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .sheet(isPresented: $showingShareSheet) {
             if let img = shareImage {
                 ActivityView(activityItems: [img])
@@ -35,14 +35,14 @@ struct OnboardingFlow: View {
         }
     }
 
-    // Removed colorful background; using solid white background as requested
-    private var backgroundLayer: some View { Color.white.ignoresSafeArea() }
+    // Using system background for proper dark mode support
+    private var backgroundLayer: some View { Color(.systemBackground).ignoresSafeArea() }
 
     private var header: some View {
         VStack(spacing: 8) {
             Text("Step \(step) of 6")
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundColor(.secondary)
             pageDots
         }
     }
@@ -67,10 +67,19 @@ struct OnboardingFlow: View {
             if step > 1 {
                 Button(action: { withAnimation { step -= 1 } }) {
                     HStack { Image(systemName: "chevron.left"); Text("Back") }
-                        .font(.subheadline.weight(.semibold))
+                        .font(.headline.weight(.semibold))
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 20)
                 }
-                .buttonStyle(.bordered)
-                .tint(.black)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(.ultraThinMaterial)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(.primary.opacity(0.2), lineWidth: 1)
+                        }
+                )
+                .foregroundColor(.primary)
             }
             Spacer(minLength: 0)
             Button(action: {
@@ -84,12 +93,19 @@ struct OnboardingFlow: View {
             }) {
                 HStack(spacing: 8) {
                     Text(step < 6 ? "Continue" : "Get started")
-                        .font(.headline)
+                        .font(.headline.weight(.semibold))
                     Image(systemName: step < 6 ? "arrow.right" : "creditcard")
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
+                .foregroundColor(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .shadow(color: .pink.opacity(0.3), radius: 8, x: 0, y: 6)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.black)
+            .buttonStyle(.plain)
         }
     }
 
@@ -118,7 +134,7 @@ struct OnboardingFlow: View {
             Text("Turn everyday moments into a beautiful visual keepsake you both build over time.")
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundColor(.secondary)
             // Media placeholder (illustration)
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.secondary.opacity(0.08))
@@ -159,7 +175,7 @@ struct OnboardingFlow: View {
             Text("See how memories turn into visuals in seconds.")
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundColor(.secondary)
             // Media placeholder (animation)
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.secondary.opacity(0.08))
@@ -176,7 +192,7 @@ struct OnboardingFlow: View {
             Text("Memories land on your shared calendar. Schedule gifts in advance.")
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundColor(.secondary)
             // Media placeholder (calendar illustration)
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.secondary.opacity(0.08))
@@ -193,7 +209,7 @@ struct OnboardingFlow: View {
             Text("See your latest memory on your Home Screen.")
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundColor(.secondary)
             // Media placeholder (widget mock)
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.secondary.opacity(0.08))
@@ -207,10 +223,10 @@ struct OnboardingFlow: View {
             Text("Invite Your Partner with a Promise")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
-            Text("Share a letter-like image: ‘I’m committing to creating beautiful memories for a year & beyond.’")
+            Text("Share a letter-like image: 'I'm committing to creating beautiful memories for a year & beyond.'")
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundColor(.secondary)
             Button("Generate & Share") {
                 // Simple placeholder share card
                 let renderer = ImageRenderer(content:
@@ -219,7 +235,7 @@ struct OnboardingFlow: View {
                         VStack(spacing: 10) {
                             Text("Veramo Commitment")
                                 .font(.title2).bold().foregroundColor(.black)
-                            Text("I’m committing to creating beautiful memories for a year & beyond.")
+                            Text("I'm committing to creating beautiful memories for a year & beyond.")
                                 .multilineTextAlignment(.center)
                                 .foregroundColor(.black)
                                 .padding()
@@ -230,8 +246,16 @@ struct OnboardingFlow: View {
                 )
                 if let ui = renderer.uiImage { shareImage = ui; showingShareSheet = true }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.black)
+            .font(.headline.weight(.semibold))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(
+                LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+            )
+            .foregroundColor(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .shadow(color: .pink.opacity(0.3), radius: 8, x: 0, y: 6)
+            .buttonStyle(.plain)
         }
     }
 }

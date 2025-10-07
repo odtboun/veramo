@@ -34,12 +34,13 @@ struct VeramoApp: App {
 
 struct RootAfterAuthView: View {
     @Bindable var authVM: AuthViewModel
+    @StateObject private var subscriptionManager = SubscriptionManager()
     @State private var showOnboarding: Bool = false
     @State private var pendingPaywallPlacement: String? = nil // kept for future AdaptyUI wiring
     @State private var shouldPresentPaywallAfterOnboarding: Bool = false
     
     var body: some View {
-        ContentView(authVM: authVM)
+        ContentView(authVM: authVM, subscriptionManager: subscriptionManager)
             .task {
                 let completed = await SupabaseService.shared.isOnboardingCompleted()
                 showOnboarding = !completed

@@ -28,6 +28,8 @@
 		1A0000000000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000004 /* ContentView.swift */; };
 		1A0000000000000000000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000006 /* Assets.xcassets */; };
 		1A0000000000000000000007 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000008 /* Preview Assets.xcassets */; };
+		AABBCCDD001 /* style-covers in Resources */ = {isa = PBXBuildFile; fileRef = AABBCCDD000 /* style-covers */; };
+		AABBCCDD003 /* couple img styles.csv in Resources */ = {isa = PBXBuildFile; fileRef = AABBCCDD002 /* couple img styles.csv */; };
 		1A0000000000000000000009 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000000A /* MainTabView.swift */; };
 		1A000000000000000000000B /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000000C /* TodayView.swift */; };
 		1A0000000000000000000011 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000012 /* CalendarView.swift */; };
@@ -38,11 +40,12 @@
 		1A000000000000000000001B /* FallbackButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000001C /* FallbackButton.swift */; };
 		2B0000000000000000000001 /* SupabaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000002 /* SupabaseConfig.swift */; };
 		2B0000000000000000000003 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000004 /* SupabaseService.swift */; };
-		5D0F8B83E1B044D18CB0F106 /* ImageGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A4FE65ED8F4878B13F8092 /* ImageGenerationService.swift */; };
 		2B0000000000000000000005 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000006 /* AuthViewModel.swift */; };
 		2B0000000000000000000007 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000008 /* AuthView.swift */; };
 		3B0000020000000000000001 /* Branding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0000010000000000000001 /* Branding.swift */; };
+		5D0F8B83E1B044D18CB0F106 /* ImageGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A4FE65ED8F4878B13F8092 /* ImageGenerationService.swift */; };
 		9F9F9F022345678900000002 /* OnboardingFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F9F9F012345678900000001 /* OnboardingFlow.swift */; };
+		SUBSCRIPTION001 /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUBSCRIPTION000 /* SubscriptionManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,6 +87,8 @@
 		1A0000000000000000000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1A0000000000000000000006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1A0000000000000000000008 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		AABBCCDD000 /* style-covers */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "style-covers"; sourceTree = "<group>"; };
+		AABBCCDD002 /* couple img styles.csv */ = {isa = PBXFileReference; lastKnownFileType = text; path = "couple img styles.csv"; sourceTree = "<group>"; };
 		1A000000000000000000000A /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		1A000000000000000000000C /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		1A0000000000000000000012 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
@@ -95,11 +100,12 @@
 		1A000000000000000000001D /* VeramoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VeramoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B0000000000000000000002 /* SupabaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseConfig.swift; sourceTree = "<group>"; };
 		2B0000000000000000000004 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
-		A5A4FE65ED8F4878B13F8092 /* ImageGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGenerationService.swift; sourceTree = "<group>"; };
 		2B0000000000000000000006 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		2B0000000000000000000008 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		3B0000010000000000000001 /* Branding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Branding.swift; sourceTree = "<group>"; };
 		9F9F9F012345678900000001 /* OnboardingFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlow.swift; sourceTree = "<group>"; };
+		A5A4FE65ED8F4878B13F8092 /* ImageGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGenerationService.swift; sourceTree = "<group>"; };
+		SUBSCRIPTION000 /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -160,6 +166,7 @@
 			children = (
 				16F250812E8FF55800FF3A0F /* VeramoApp.entitlements */,
 				16F250802E8FF2E400FF3A0F /* Info.plist */,
+				AABBCCDD002 /* couple img styles.csv */,
 				1A0000000000000000000002 /* VeramoApp.swift */,
 				1A0000000000000000000004 /* ContentView.swift */,
 				2B0000000000000000000009 /* Config */,
@@ -168,6 +175,7 @@
 				1A0000000000000000000020 /* Views */,
 				1A0000000000000000000006 /* Assets.xcassets */,
 				1A0000000000000000000021 /* Preview Content */,
+				AABBCCDD000 /* style-covers */,
 			);
 			path = VeramoApp;
 			sourceTree = "<group>";
@@ -243,6 +251,7 @@
 			children = (
 				2B0000000000000000000004 /* SupabaseService.swift */,
 				A5A4FE65ED8F4878B13F8092 /* ImageGenerationService.swift */,
+				SUBSCRIPTION000 /* SubscriptionManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -355,6 +364,8 @@
 				1A0000000000000000000007 /* Preview Assets.xcassets in Resources */,
 				16F250852E90A40F00FF3A0F /* veramo_icon_01.icon in Resources */,
 				1A0000000000000000000005 /* Assets.xcassets in Resources */,
+				AABBCCDD001 /* style-covers in Resources */,
+				AABBCCDD003 /* couple img styles.csv in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -392,6 +403,7 @@
 				2B0000000000000000000005 /* AuthViewModel.swift in Sources */,
 				2B0000000000000000000007 /* AuthView.swift in Sources */,
 				9F9F9F022345678900000002 /* OnboardingFlow.swift in Sources */,
+				SUBSCRIPTION001 /* SubscriptionManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -419,7 +431,7 @@
 				INFOPLIST_FILE = VeramoWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VeramoWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -460,7 +472,7 @@
 				INFOPLIST_FILE = VeramoWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VeramoWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
