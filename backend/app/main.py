@@ -38,23 +38,15 @@ def process_first_image(image_path):
             # Convert to RGB if necessary
             if img.mode != 'RGB':
                 img = img.convert('RGB')
-            
-            # Rotate 90 degrees clockwise
-            rotated = img.rotate(-90, expand=True)
-            
-            # Get dimensions and calculate square crop
-            width, height = rotated.size
+            # Do not rotate. If needed, return the image as-is (no-op) to avoid orientation issues.
+            # If we want square aspect, center-crop to square without rotating
+            width, height = img.size
             size = min(width, height)
-            
-            # Calculate crop box (center crop)
             left = (width - size) // 2
             top = (height - size) // 2
             right = left + size
             bottom = top + size
-            
-            # Crop to square
-            square_crop = rotated.crop((left, top, right, bottom))
-            
+            square_crop = img.crop((left, top, right, bottom))
             return square_crop
     except Exception as e:
         print(f"Error processing image: {e}")

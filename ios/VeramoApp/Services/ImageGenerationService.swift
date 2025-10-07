@@ -92,10 +92,11 @@ class ImageGenerationService {
                 throw ImageGenerationError.serverError(httpResponse.statusCode)
             }
             
-            guard let image = UIImage(data: data) else {
+            guard let rawImage = UIImage(data: data) else {
                 throw ImageGenerationError.invalidImageData
             }
-            
+            // Normalize orientation to avoid unexpected 90° rotations
+            let image = rawImage.normalizedUp()
             return image
             
         } catch {
@@ -184,6 +185,15 @@ class ImageGenerationService {
 
 extension UIImage {
     func resized(to size: CGSize) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in
+            self.draw(in: CGRect(origin: .zero, size: size))
+        }
+    }
+    
+    // Ensure image has upright orientation
+    func normalizedUp() -> UIImage {
+        if imageOrientation == .up { return self }
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { _ in
             self.draw(in: CGRect(origin: .zero, size: size))
