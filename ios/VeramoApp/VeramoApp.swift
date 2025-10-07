@@ -49,12 +49,22 @@ struct RootAfterAuthView: View {
             .fullScreenCover(isPresented: $showOnboarding) {
                 OnboardingFlow(partnerAlreadyOnboarded: false) {
                     print("🎯 Onboarding finished: marking completed & scheduling paywall")
-                    Task { await SupabaseService.shared.setOnboardingCompleted() }
-                    // Defer actual presentation until the sheet dismisses
-                    shouldPresentPaywallAfterOnboarding = true
+                    Task {
+                        await SupabaseService.shared.setOnboardingCompleted()
+                        // Refresh subscription state before deciding on paywall
+                        await subscriptionManager.checkSubscriptionStatus()
+                        await MainActor.run {
+                            // Only schedule paywall if not subscribed
+                            if !subscriptionManager.isSubscribed {
+                                shouldPresentPaywallAfterOnboarding = true
+                            }
+                        }
+                    }
                     showOnboarding = false
                 }
                 .onDisappear {
+                    // Never present paywall if subscribed
+                    if subscriptionManager.isSubscribed { return }
                     guard shouldPresentPaywallAfterOnboarding else { return }
                     shouldPresentPaywallAfterOnboarding = false
                     print("🧾 Adapty: presenting after onboarding dismissal")
@@ -64,6 +74,11 @@ struct RootAfterAuthView: View {
             .onChange(of: pendingPaywallPlacement) { _, newValue in
                 guard let placementId = newValue else { return }
                 print("🧾 Adapty: onChange detected placement = \(placementId)")
+                // Never present paywall if subscribed
+                if subscriptionManager.isSubscribed {
+                    pendingPaywallPlacement = nil
+                    return
+                }
                 Task { await presentAdaptyPaywall(placementId: placementId) }
                 pendingPaywallPlacement = nil
             }
@@ -73,6 +88,8 @@ struct RootAfterAuthView: View {
 extension RootAfterAuthView {
     @MainActor
     private func presentAdaptyPaywall(placementId: String) async {
+        // Guard: do not show paywall for subscribed couples
+        if subscriptionManager.isSubscribed { return }
         do {
             print("🧾 Adapty: fetching paywall for placement=\(placementId)")
             let paywall = try await Adapty.getPaywall(placementId: placementId)
