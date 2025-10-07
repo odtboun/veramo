@@ -292,8 +292,8 @@ def generate_with_nano_banana(description, style_label):
         print(f"🔑 FAL_KEY set: {bool(fal_client.api_key)}")
         
         if not fal_client.api_key:
-            print("❌ FAL_KEY not set, falling back to placeholder")
-            return generate_placeholder_image(description, [], style_label)
+            print("❌ FAL_KEY not set")
+            raise RuntimeError("FAL_KEY not set")
 
         # Create enhanced prompt with style - try a simpler approach
         if style_label and style_label != "none":
@@ -369,13 +369,11 @@ def generate_with_nano_banana(description, style_label):
                     return Image.open(io.BytesIO(image_data))
                 except Exception as decode_error:
                     print(f"❌ Base64 decode error: {decode_error}")
-                    print("⚠️ Base64 decode failed, falling back to placeholder")
-                    return generate_placeholder_image(description, [], style_label)
+                    raise
             
             elif not url_str.startswith('http'):
                 print(f"❌ Invalid image URL format: {repr(image_url)}")
-                print("⚠️ Invalid URL format, falling back to placeholder")
-                return generate_placeholder_image(description, [], style_label)
+                raise RuntimeError("Invalid image URL returned by model")
 
             print(f"🖼️ Generated image URL: {image_url}")
             response = requests.get(image_url)
@@ -384,46 +382,22 @@ def generate_with_nano_banana(description, style_label):
                 return Image.open(io.BytesIO(response.content))
             else:
                 print(f"❌ Failed to download image: {response.status_code}")
-                # Fallback to placeholder if download fails
-                print("⚠️ Image download failed, falling back to placeholder")
-                return generate_placeholder_image(description, [], style_label)
+                raise RuntimeError(f"Image download failed: status {response.status_code}")
         else:
             print(f"❌ No image URL found in result: {result}")
-            # Fallback to placeholder if result format is unexpected
-            print("⚠️ Unexpected result format, falling back to placeholder")
-            return generate_placeholder_image(description, [], style_label)
+            raise RuntimeError("No image URL found in model result")
             
     except Exception as e:
         print(f"❌ fal.ai nano-banana error: {e}")
         print(f"❌ Error type: {type(e)}")
         print(f"❌ Traceback: {traceback.format_exc()}")
-        # Fallback to placeholder
-        print("⚠️ fal.ai nano-banana error, falling back to placeholder")
-        return generate_placeholder_image(description, [], style_label)
+        raise
 
 def generate_placeholder_image(description, images, style_label):
     """
-    Placeholder function that simulates AI image generation
-    Returns a processed version of the first image or a solid color square
+    Deprecated placeholder generator. Intentionally disabled.
     """
-    if images and len(images) > 0:
-        # Process the first image: rotate and crop
-        processed_img = process_first_image(images[0])
-        if processed_img:
-            return processed_img
-    
-    # Fallback: create solid color square
-    # Use style_label to determine color
-    color_map = {
-        "warm": (255, 200, 150),
-        "cool": (150, 200, 255),
-        "neutral": (200, 200, 200),
-        "vibrant": (255, 100, 100),
-        "muted": (150, 150, 150)
-    }
-    
-    color = color_map.get(style_label.lower(), (128, 128, 128))
-    return create_solid_color_square(512, color)
+    raise RuntimeError("Placeholder generation disabled; use AI model routing.")
 
 # Routes
 @app.route('/', methods=['GET'])
