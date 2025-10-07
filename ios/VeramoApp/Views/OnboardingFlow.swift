@@ -41,6 +41,8 @@ struct OnboardingFlow: View {
         .sheet(isPresented: $showingShareSheet) {
             if let img = shareImage {
                 ActivityView(activityItems: [img])
+            } else {
+                Text("No image to share")
             }
         }
     }
@@ -358,6 +360,8 @@ struct OnboardingFlow: View {
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
                     Button("Generate & Share") {
+                        print("🎨 Generating shareable image...")
+                        
                         // Custom square shareable image
                         let renderer = ImageRenderer(content:
                             ZStack {
@@ -397,7 +401,16 @@ struct OnboardingFlow: View {
                             }
                             .frame(width: 600, height: 600) // Square image
                         )
-                        if let ui = renderer.uiImage { shareImage = ui; showingShareSheet = true }
+                        
+                        // Debug the image generation
+                        if let ui = renderer.uiImage {
+                            print("✅ Image generated successfully: \(ui.size)")
+                            shareImage = ui
+                            showingShareSheet = true
+                            print("📤 Share sheet should be showing")
+                        } else {
+                            print("❌ Failed to generate image")
+                        }
                     }
                     .font(.headline.weight(.semibold))
                     .frame(maxWidth: .infinity)
