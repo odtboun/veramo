@@ -299,8 +299,12 @@ struct OnboardingFlow: View {
         }
     }
 
+    @State private var selectedStyle: String? = nil
+    @State private var isGenerating: Bool = false
+    @State private var showResult: Bool = false
+    
     private var step3: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 24) {
             Text("A Glimpse of the Magic ✨")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
@@ -308,12 +312,105 @@ struct OnboardingFlow: View {
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
-            // Media placeholder (animation)
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.secondary.opacity(0.08))
-                .frame(height: 260)
-                .overlay { Text("Animation Placeholder") }
+            
+            // Interactive magic demonstration
+            VStack(spacing: 20) {
+                // Original photo
+                if !showResult {
+                    Image("real-couple walking")
+                        .resizable()
+                        .aspectRatio(4/3, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                }
+                
+                // Style buttons
+                if !showResult {
+                    VStack(spacing: 12) {
+                        Text("Choose a style:")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
+                            StyleButton(
+                                title: "4-Panel Comic",
+                                description: "Story format",
+                                isSelected: selectedStyle == "4-panel-comic",
+                                action: { selectStyle("4-panel-comic") }
+                            )
+                            
+                            StyleButton(
+                                title: "Action Figures",
+                                description: "Toy style",
+                                isSelected: selectedStyle == "action-figures",
+                                action: { selectStyle("action-figures") }
+                            )
+                            
+                            StyleButton(
+                                title: "Polaroid",
+                                description: "Vintage photo",
+                                isSelected: selectedStyle == "polaroid",
+                                action: { selectStyle("polaroid") }
+                            )
+                            
+                            StyleButton(
+                                title: "Ukiyo-e",
+                                description: "Japanese art",
+                                isSelected: selectedStyle == "ukiyo-e",
+                                action: { selectStyle("ukiyo-e") }
+                            )
+                        }
+                    }
+                }
+                
+                // Generating animation
+                if isGenerating {
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        Text("Generating...")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(height: 200)
+                }
+                
+                // Result image
+                if showResult, let style = selectedStyle {
+                    VStack(spacing: 12) {
+                        Image(style)
+                            .resizable()
+                            .aspectRatio(4/3, contentMode: .fit)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                        
+                        Button("Try Another Style") {
+                            resetMagicDemo()
+                        }
+                        .font(.headline)
+                        .foregroundColor(.blue)
+                    }
+                }
+            }
         }
+    }
+    
+    private func selectStyle(_ style: String) {
+        selectedStyle = style
+        isGenerating = true
+        showResult = false
+        
+        // Simulate generation delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            isGenerating = false
+            showResult = true
+        }
+    }
+    
+    private func resetMagicDemo() {
+        selectedStyle = nil
+        isGenerating = false
+        showResult = false
     }
 
     private var step4: some View {
@@ -423,6 +520,38 @@ struct ActivityView: UIViewControllerRepresentable {
     let activityItems: [Any]
     func makeUIViewController(context: Context) -> UIActivityViewController { UIActivityViewController(activityItems: activityItems, applicationActivities: nil) }
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
+}
+
+struct StyleButton: View {
+    let title: String
+    let description: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(isSelected ? .white : .primary)
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.blue : Color(.systemGray6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
 }
 
 
