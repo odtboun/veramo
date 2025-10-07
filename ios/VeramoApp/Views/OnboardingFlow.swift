@@ -319,7 +319,7 @@ struct OnboardingFlow: View {
                 if !showResult {
                     Image("real-couple walking")
                         .resizable()
-                        .aspectRatio(4/3, contentMode: .fit)
+                        .aspectRatio(1, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                 }
@@ -380,7 +380,7 @@ struct OnboardingFlow: View {
                     VStack(spacing: 12) {
                         Image(style)
                             .resizable()
-                            .aspectRatio(4/3, contentMode: .fit)
+                            .aspectRatio(1, contentMode: .fit)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                             .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                         
