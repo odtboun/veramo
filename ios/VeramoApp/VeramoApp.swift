@@ -38,6 +38,7 @@ struct RootAfterAuthView: View {
     @State private var showOnboarding: Bool = false
     @State private var pendingPaywallPlacement: String? = nil // kept for future AdaptyUI wiring
     @State private var shouldPresentPaywallAfterOnboarding: Bool = false
+    @State private var paywallDelegate: PaywallDelegate?
     
     var body: some View {
         ContentView(authVM: authVM, subscriptionManager: subscriptionManager)
@@ -79,7 +80,10 @@ extension RootAfterAuthView {
 
             let configuration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
             print("✅ AdaptyUI: obtained paywall configuration")
-            let controller = try AdaptyUI.paywallController(with: configuration, delegate: PaywallDelegate())
+            
+            // Create and retain the delegate
+            paywallDelegate = PaywallDelegate()
+            let controller = try AdaptyUI.paywallController(with: configuration, delegate: paywallDelegate!)
             print("✅ AdaptyUI: created paywall controller")
 
             // The onboarding cover dismissal can race the presentation; retry a few times

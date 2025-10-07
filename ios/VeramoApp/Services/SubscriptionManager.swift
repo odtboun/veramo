@@ -9,6 +9,7 @@ class SubscriptionManager: ObservableObject, AdaptyDelegate {
     @Published var isLoading: Bool = true
     
     private let accessLevel = "premium" // Using Adapty's default premium access level
+    private var paywallDelegate: PaywallDelegate?
     
     init() {
         // Set delegate to receive automatic profile updates
@@ -69,7 +70,9 @@ class SubscriptionManager: ObservableObject, AdaptyDelegate {
             let configuration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
             print("✅ AdaptyUI: obtained paywall configuration")
             
-            let controller = try AdaptyUI.paywallController(with: configuration, delegate: PaywallDelegate())
+            // Create and retain the delegate
+            paywallDelegate = PaywallDelegate(subscriptionManager: self)
+            let controller = try AdaptyUI.paywallController(with: configuration, delegate: paywallDelegate!)
             print("✅ AdaptyUI: created paywall controller")
             
             // Present from the topmost view controller
@@ -98,8 +101,19 @@ class SubscriptionManager: ObservableObject, AdaptyDelegate {
 // MARK: - PaywallDelegate
 
 private final class PaywallDelegate: NSObject, AdaptyPaywallControllerDelegate {
+    weak var subscriptionManager: SubscriptionManager?
+    
+    init(subscriptionManager: SubscriptionManager) {
+        self.subscriptionManager = subscriptionManager
+    }
+    
     func paywallControllerDidFinishPurchase(_ controller: AdaptyPaywallController) {
         print("✅ Adapty: purchase flow finished")
+        controller.dismiss(animated: true) {
+            Task { @MainActor in
+                await self.subscriptionManager?.checkSubscriptionStatus()
+            }
+        }
     }
 
     func paywallController(_ controller: AdaptyPaywallController, didFailPurchase product: any AdaptyPaywallProduct, error: AdaptyError) {
@@ -108,10 +122,20 @@ private final class PaywallDelegate: NSObject, AdaptyPaywallControllerDelegate {
 
     func paywallControllerDidFinishRestore(_ controller: AdaptyPaywallController) {
         print("✅ Adapty: restore finished")
+        controller.dismiss(animated: true) {
+            Task { @MainActor in
+                await self.subscriptionManager?.checkSubscriptionStatus()
+            }
+        }
     }
 
     func paywallController(_ controller: AdaptyPaywallController, didFinishRestoreWith profile: AdaptyProfile) {
         print("✅ Adapty: restore finished with profile")
+        controller.dismiss(animated: true) {
+            Task { @MainActor in
+                await self.subscriptionManager?.checkSubscriptionStatus()
+            }
+        }
     }
 
     func paywallController(_ controller: AdaptyPaywallController, didFailRestoreWith error: AdaptyError) {
