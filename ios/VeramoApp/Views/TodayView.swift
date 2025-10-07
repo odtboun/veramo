@@ -649,6 +649,7 @@ struct TodayAnimatedImageView: View {
     @Binding var isPresented: Bool
     @State private var scale: CGFloat = 0.1
     @State private var opacity: Double = 0
+    @State private var downloadedImage: UIImage?
     
     var body: some View {
         ZStack {
@@ -685,23 +686,37 @@ struct TodayAnimatedImageView: View {
                 
                 Spacer()
                 
-                // Close button
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        scale = 0.1
-                        opacity = 0
+                // Action buttons
+                HStack(spacing: 20) {
+                    // Download button
+                    Button(action: {
+                        downloadImage()
+                    }) {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.white)
+                            .background(Color.black.opacity(0.5), in: Circle())
                     }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        isPresented = false
+                    .opacity(opacity)
+                    
+                    // Close button
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            scale = 0.1
+                            opacity = 0
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            isPresented = false
+                        }
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.white)
+                            .background(Color.black.opacity(0.5), in: Circle())
                     }
-                }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(.white)
-                        .background(Color.black.opacity(0.5), in: Circle())
+                    .opacity(opacity)
                 }
                 .padding(.bottom, 50)
-                .opacity(opacity)
             }
         }
         .onTapGesture {
@@ -717,6 +732,34 @@ struct TodayAnimatedImageView: View {
             withAnimation(.easeOut(duration: 0.4)) {
                 scale = 1.0
                 opacity = 1.0
+            }
+        }
+    }
+    
+    private func downloadImage() {
+        if let downloadedImage = downloadedImage {
+            UIImageWriteToSavedPhotosAlbum(downloadedImage, nil, nil, nil)
+            print("✅ Image saved to Photos")
+        } else {
+            // Download the image first
+            guard let url = URL(string: imageUrl) else {
+                print("❌ Invalid image URL")
+                return
+            }
+            
+            Task {
+                do {
+                    let (data, _) = try await URLSession.shared.data(from: url)
+                    if let image = UIImage(data: data) {
+                        await MainActor.run {
+                            self.downloadedImage = image
+                            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                            print("✅ Image saved to Photos")
+                        }
+                    }
+                } catch {
+                    print("❌ Failed to download image: \(error)")
+                }
             }
         }
     }

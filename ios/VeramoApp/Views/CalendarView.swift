@@ -893,23 +893,37 @@ struct AnimatedImageView: View {
                 
                 Spacer()
                 
-                // Close button
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        scale = 0.1
-                        opacity = 0
+                // Action buttons
+                HStack(spacing: 20) {
+                    // Download button
+                    Button(action: {
+                        downloadImage()
+                    }) {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.white)
+                            .background(Color.black.opacity(0.5), in: Circle())
                     }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        isPresented = false
+                    .opacity(opacity)
+                    
+                    // Close button
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            scale = 0.1
+                            opacity = 0
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            isPresented = false
+                        }
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.white)
+                            .background(Color.black.opacity(0.5), in: Circle())
                     }
-                }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(.white)
-                        .background(Color.black.opacity(0.5), in: Circle())
+                    .opacity(opacity)
                 }
                 .padding(.bottom, 50)
-                .opacity(opacity)
             }
         }
         .onTapGesture {
@@ -979,6 +993,16 @@ struct AnimatedImageView: View {
                 self.isLoading = false
             }
         }
+    }
+    
+    private func downloadImage() {
+        guard let image = cachedImage else {
+            print("❌ No image available to download")
+            return
+        }
+        
+        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+        print("✅ Image saved to Photos")
     }
 }
 
