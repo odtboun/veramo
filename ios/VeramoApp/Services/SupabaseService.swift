@@ -67,15 +67,19 @@ final class SupabaseService {
         } while attempts < 10
         
         let userId = try await currentUserId()
+        let currentUserProfile = try await Adapty.getProfile()
+        
         struct NewCode: Encodable { 
             let code: String
             let inviter_user_id: UUID
+            let inviter_adapty_profile_id: String
             let expires_at: String
         }
         let expiresAt = ISO8601DateFormatter().string(from: Date().addingTimeInterval(3600))
         _ = try await client.from("pairing_codes").insert(NewCode(
             code: code, 
             inviter_user_id: userId,
+            inviter_adapty_profile_id: currentUserProfile.profileId,
             expires_at: expiresAt
         )).execute()
         return code
@@ -84,10 +88,11 @@ final class SupabaseService {
     func joinWithCode(_ code: String) async throws {
         struct CodeRow: Decodable { 
             let inviter_user_id: UUID
+            let inviter_adapty_profile_id: String
         }
         let found: CodeRow = try await client
             .from("pairing_codes")
-            .select("inviter_user_id")
+            .select("inviter_user_id, inviter_adapty_profile_id")
             .eq("code", value: code)
             .single()
             .execute().value
@@ -103,21 +108,20 @@ final class SupabaseService {
         // Get current user's Adapty profile ID
         let currentUserProfile = try await Adapty.getProfile()
         
-        // Create new couple with current user's Adapty profile ID
-        // Note: We'll need to get the partner's Adapty profile ID when they join
+        // Create new couple with BOTH Adapty profile IDs
         struct NewCouple: Encodable { 
             let user1_id: UUID
             let user2_id: UUID
             let is_active: Bool
-            let user1_adapty_profile_id: String?
+            let user1_adapty_profile_id: String
             let user2_adapty_profile_id: String
         }
         _ = try await client.from("couples").insert(NewCouple(
             user1_id: partnerUserId,
             user2_id: myUserId,
             is_active: true,
-            user1_adapty_profile_id: nil, // Partner's profile ID will be added later
-            user2_adapty_profile_id: currentUserProfile.profileId
+            user1_adapty_profile_id: found.inviter_adapty_profile_id, // From pairing code
+            user2_adapty_profile_id: currentUserProfile.profileId // Current user
         )).execute()
         
         // Mark code as redeemed
@@ -142,35 +146,6 @@ final class SupabaseService {
     }
     
     // MARK: - Couple Subscription Management
-    
-    func updateCoupleWithAdaptyProfile() async throws {
-        let userId = try await currentUserId()
-        let currentUserProfile = try await Adapty.getProfile()
-        
-        guard let couple = await fetchCouple() else {
-            print("❌ No active couple found to update")
-            return
-        }
-        
-        // Determine which field to update based on user position in couple
-        let updateData: [String: String]
-        if userId == couple.user1_id {
-            updateData = ["user1_adapty_profile_id": currentUserProfile.profileId]
-        } else if userId == couple.user2_id {
-            updateData = ["user2_adapty_profile_id": currentUserProfile.profileId]
-        } else {
-            print("❌ User not found in couple")
-            return
-        }
-        
-        // Update the couple record with current user's Adapty profile ID
-        _ = try await client.from("couples")
-            .update(updateData)
-            .eq("id", value: couple.id)
-            .execute()
-            
-        print("✅ Updated couple with Adapty profile ID: \(currentUserProfile.profileId)")
-    }
     
     func checkCoupleSubscriptionStatus() async throws -> Bool {
         guard let couple = await fetchCouple(), couple.is_active else {

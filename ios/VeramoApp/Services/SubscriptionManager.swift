@@ -23,15 +23,14 @@ class SubscriptionManager: ObservableObject, AdaptyDelegate {
     
     nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
         Task { @MainActor in
-            // Update couple with current user's profile and check couple subscription
+            // Check couple subscription status
             do {
-                try await SupabaseService.shared.updateCoupleWithAdaptyProfile()
                 let coupleHasAccess = try await SupabaseService.shared.checkCoupleSubscriptionStatus()
                 self.isSubscribed = coupleHasAccess
                 self.isLoading = false
                 print("💑 Couple subscription status updated: \(self.isSubscribed ? "At least one partner subscribed" : "Neither partner subscribed")")
             } catch {
-                print("❌ Error updating couple subscription status: \(error)")
+                print("❌ Error checking couple subscription status: \(error)")
                 self.isSubscribed = false
                 self.isLoading = false
             }
@@ -42,10 +41,7 @@ class SubscriptionManager: ObservableObject, AdaptyDelegate {
     
     func checkSubscriptionStatus() async {
         do {
-            // First, update the couple with current user's Adapty profile ID
-            try await SupabaseService.shared.updateCoupleWithAdaptyProfile()
-            
-            // Then check if either partner in the couple is subscribed
+            // Check if either partner in the couple is subscribed
             let coupleHasAccess = try await SupabaseService.shared.checkCoupleSubscriptionStatus()
             isSubscribed = coupleHasAccess
             isLoading = false
