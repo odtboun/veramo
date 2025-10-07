@@ -91,6 +91,12 @@ struct CreateTabView: View {
                 .replacingOccurrences(of: "_", with: " ")
                 .replacingOccurrences(of: "-", with: " ")
                 .capitalized
+            
+            // Use asset catalog image for 4-panel comic to match onboarding magic demo
+            if raw.lowercased() == "4-panel-comic" {
+                return (short, "4-panel-comic")
+            }
+            
             return (short, "style-covers/" + url.lastPathComponent)
         }
         // Fallback to empty if none found
