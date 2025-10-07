@@ -13,6 +13,7 @@ struct CalendarView: View {
     @State private var lastUpdateTimestamp: Date? = nil
     @State private var showingImageFullScreen = false
     @State private var selectedImageEntry: CalendarEntry? = nil
+    @StateObject private var subscriptionManager = SubscriptionManager()
     
     // Static cache shared across all instances
     static var cachedImages: [String: UIImage] = [:]
@@ -76,7 +77,12 @@ struct CalendarView: View {
                         }
                         
                         // Add to Calendar button under grid
-                        Button(action: { showingAddMemory = true }) {
+                        Button(action: {
+                            Task {
+                                let hasAccess = await subscriptionManager.presentPaywallIfNeeded(placementId: "in-app-placement")
+                                if hasAccess { showingAddMemory = true }
+                            }
+                        }) {
                             HStack(spacing: 8) {
                                 Image(systemName: "calendar.badge.plus")
                                 Text("Add to Calendar")

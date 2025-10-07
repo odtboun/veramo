@@ -226,6 +226,8 @@ struct CreateEditorView: View {
     @State private var showingDatePicker: Bool = false
     @State private var selectedCalendarDate: Date = Date()
     @State private var isManuallyRemoving: Bool = false
+    @State private var loadingMessages: [String] = []
+    @State private var currentLoadingMessageIndex: Int = 0
     
     var body: some View {
         ScrollView {
@@ -402,9 +404,32 @@ struct CreateEditorView: View {
                             }
                         }
                     }
+                } else if isGenerating {
+                    // Rotating romantic loading messages while waiting for the image URL
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(.ultraThinMaterial)
+                        VStack(spacing: 14) {
+                            ProgressView()
+                                .tint(.primary)
+                            Text(currentLoadingMessage)
+                                .font(.headline)
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 16)
+                        }
+                        .padding(24)
+                    }
+                    .aspectRatio(1, contentMode: .fit)
                 }
             }
             .padding(16)
+            // Advance message every 2 seconds while generating and no result yet
+            .onReceive(Timer.publish(every: 2, on: .main, in: .common).autoconnect()) { _ in
+                if isGenerating && resultImageURL == nil && !loadingMessages.isEmpty {
+                    currentLoadingMessageIndex = (currentLoadingMessageIndex + 1) % loadingMessages.count
+                }
+            }
         }
         .navigationBarHidden(true)
                 .sheet(isPresented: $showingDatePicker) {
@@ -434,6 +459,9 @@ struct CreateEditorView: View {
     private func generatePlaceholder() {
         isGenerating = true
         resultImageURL = nil
+        // Shuffle messages for this run
+        loadingMessages = romanticLoadingMessages.shuffled()
+        currentLoadingMessageIndex = 0
         
         Task {
             do {
@@ -472,6 +500,40 @@ struct CreateEditorView: View {
                 }
             }
         }
+    }
+
+    private var currentLoadingMessage: String {
+        guard !loadingMessages.isEmpty else { return "Generating..." }
+        return loadingMessages[currentLoadingMessageIndex]
+    }
+
+    private var romanticLoadingMessages: [String] {
+        [
+            "Painting your love story with pixels...",
+            "Asking Cupid for art advice...",
+            "Mixing digital paint and happy memories...",
+            "Dusting off the old AI photo albums...",
+            "Teaching our AI about date nights...",
+            "Consulting with rom-com experts...",
+            "Finding the perfect filter for your affection...",
+            "Waiting for the digital paint to dry...",
+            "Whispering sweet nothings to the server...",
+            "Developing your photo in the darkroom of the future...",
+            "Shuffling through a deck of romantic art styles...",
+            "Recalling our first date with the AI...",
+            "Putting the 'art' in 'heart'...",
+            "Brewing a fresh pot of creative juices...",
+            "Untangling the red string of fate...",
+            "Sending a raven to the art masters for tips...",
+            "Composing a sonnet for your picture...",
+            "Making sure the AI remembers your anniversary...",
+            "Calculating the formula of love...",
+            "Reading Mamamoo - I Love Too Lyrics",
+            "Choosing the best AI for real lovers",
+            "Looking for lost childhood photos",
+            "Ordering from Chungking Express",
+            "Calling my highschool art teacher"
+        ]
     }
     
     private func saveToPhotos() {

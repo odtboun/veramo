@@ -108,39 +108,49 @@ final class SupabaseService {
         // Get current user's Adapty profile ID
         let currentUserProfile = try await Adapty.getProfile()
         
-        // Check for existing inactive couple between these two users
-        let existingCouples: [Couple] = try await client
+        // Check for an existing couple between these exact two users (active or inactive)
+        let pairFilter = "and(user1_id.eq.\(myUserId),user2_id.eq.\(partnerUserId)),and(user1_id.eq.\(partnerUserId),user2_id.eq.\(myUserId))"
+        let existingCouplesAny: [Couple] = try await client
             .from("couples")
             .select("id, user1_id, user2_id, is_active, user1_adapty_profile_id, user2_adapty_profile_id")
-            .or("user1_id.eq.\(myUserId),user2_id.eq.\(myUserId)")
-            .or("user1_id.eq.\(partnerUserId),user2_id.eq.\(partnerUserId)")
-            .eq("is_active", value: false)
+            .or(pairFilter)
             .execute().value
-        
-        // Find couple that includes both users
-        let existingCouple = existingCouples.first { couple in
-            let userIds = [couple.user1_id, couple.user2_id]
-            return userIds.contains(myUserId) && userIds.contains(partnerUserId)
-        }
+        let existingCouple = existingCouplesAny.first
         
         if let existingCouple = existingCouple {
-            // Reactivate existing couple and update Adapty profile IDs
-            print("🔄 Reactivating existing couple: \(existingCouple.id)")
-            
-            // Determine which user is which based on the existing couple structure
-            let isMyUserId1 = existingCouple.user1_id == myUserId
-            let updateData: [String: String] = [
-                "is_active": "true",
-                isMyUserId1 ? "user1_adapty_profile_id" : "user2_adapty_profile_id": currentUserProfile.profileId,
-                isMyUserId1 ? "user2_adapty_profile_id" : "user1_adapty_profile_id": found.inviter_adapty_profile_id
-            ]
-            
-            _ = try await client.from("couples")
-                .update(updateData)
-                .eq("id", value: existingCouple.id)
-                .execute()
-            
-            print("✅ Reactivated couple with updated Adapty profile IDs")
+            if existingCouple.is_active {
+                // Already connected: just ensure Adapty IDs are set, then finish
+                print("ℹ️ Couple already active: \(existingCouple.id). Ensuring Adapty IDs are populated")
+                let isMyUserId1 = existingCouple.user1_id == myUserId
+                var updateData: [String: String] = [:]
+                if (isMyUserId1 ? existingCouple.user1_adapty_profile_id : existingCouple.user2_adapty_profile_id) == nil {
+                    updateData[isMyUserId1 ? "user1_adapty_profile_id" : "user2_adapty_profile_id"] = currentUserProfile.profileId
+                }
+                if (isMyUserId1 ? existingCouple.user2_adapty_profile_id : existingCouple.user1_adapty_profile_id) == nil {
+                    updateData[isMyUserId1 ? "user2_adapty_profile_id" : "user1_adapty_profile_id"] = found.inviter_adapty_profile_id
+                }
+                if !updateData.isEmpty {
+                    _ = try await client.from("couples")
+                        .update(updateData)
+                        .eq("id", value: existingCouple.id)
+                        .execute()
+                }
+                // Skip insert to avoid duplicate-key error
+            } else {
+                // Reactivate existing couple and update Adapty profile IDs
+                print("🔄 Reactivating existing couple: \(existingCouple.id)")
+                let isMyUserId1 = existingCouple.user1_id == myUserId
+                let updateData: [String: String] = [
+                    "is_active": "true",
+                    isMyUserId1 ? "user1_adapty_profile_id" : "user2_adapty_profile_id": currentUserProfile.profileId,
+                    isMyUserId1 ? "user2_adapty_profile_id" : "user1_adapty_profile_id": found.inviter_adapty_profile_id
+                ]
+                _ = try await client.from("couples")
+                    .update(updateData)
+                    .eq("id", value: existingCouple.id)
+                    .execute()
+                print("✅ Reactivated couple with updated Adapty profile IDs")
+            }
         } else {
             // Create new couple with BOTH Adapty profile IDs
             print("🆕 Creating new couple")

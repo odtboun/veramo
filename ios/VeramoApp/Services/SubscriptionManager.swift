@@ -59,22 +59,22 @@ class SubscriptionManager: ObservableObject, AdaptyDelegate {
     
     // MARK: - Paywall Presentation
     
-    func presentPaywallIfNeeded() async -> Bool {
+    func presentPaywallIfNeeded(placementId: String = "placement0") async -> Bool {
         // If already subscribed, allow the action
         if isSubscribed {
             return true
         }
         
         // Show paywall for non-subscribers
-        await presentPaywall()
+        await presentPaywall(placementId: placementId)
         return false
     }
     
-    private func presentPaywall() async {
+    private func presentPaywall(placementId: String) async {
         do {
-            print("🧾 Adapty: fetching paywall for placement=placement0")
-            let paywall = try await Adapty.getPaywall(placementId: "placement0")
-            print("✅ Adapty: fetched paywall name=\(paywall.name ?? "nil") placement=placement0")
+            print("🧾 Adapty: fetching paywall for placement=\(placementId)")
+            let paywall = try await Adapty.getPaywall(placementId: placementId)
+            print("✅ Adapty: fetched paywall name=\(paywall.name ?? "nil") placement=\(placementId)")
             
             let configuration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
             print("✅ AdaptyUI: obtained paywall configuration")
