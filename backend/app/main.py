@@ -39,15 +39,8 @@ def process_first_image(image_path):
             if img.mode != 'RGB':
                 img = img.convert('RGB')
             # Do not rotate. If needed, return the image as-is (no-op) to avoid orientation issues.
-            # If we want square aspect, center-crop to square without rotating
-            width, height = img.size
-            size = min(width, height)
-            left = (width - size) // 2
-            top = (height - size) // 2
-            right = left + size
-            bottom = top + size
-            square_crop = img.crop((left, top, right, bottom))
-            return square_crop
+            # No rotate or crop — models already return 1:1
+            return img
     except Exception as e:
         print(f"Error processing image: {e}")
         return None
