@@ -46,11 +46,6 @@
 		5D0F8B83E1B044D18CB0F106 /* ImageGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A4FE65ED8F4878B13F8092 /* ImageGenerationService.swift */; };
 		9F9F9F022345678900000002 /* OnboardingFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F9F9F012345678900000001 /* OnboardingFlow.swift */; };
 		SUBSCRIPTION001 /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUBSCRIPTION000 /* SubscriptionManager.swift */; };
-		MAGIC001 /* real-couple walking.png in Resources */ = {isa = PBXBuildFile; fileRef = MAGIC000 /* real-couple walking.png */; };
-		MAGIC003 /* 4-panel-comic.png in Resources */ = {isa = PBXBuildFile; fileRef = MAGIC002 /* 4-panel-comic.png */; };
-		MAGIC005 /* action-figures.png in Resources */ = {isa = PBXBuildFile; fileRef = MAGIC004 /* action-figures.png */; };
-		MAGIC007 /* polaroid.png in Resources */ = {isa = PBXBuildFile; fileRef = MAGIC006 /* polaroid.png */; };
-		MAGIC009 /* ukiyo-e.png in Resources */ = {isa = PBXBuildFile; fileRef = MAGIC008 /* ukiyo-e.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -111,11 +106,6 @@
 		9F9F9F012345678900000001 /* OnboardingFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlow.swift; sourceTree = "<group>"; };
 		A5A4FE65ED8F4878B13F8092 /* ImageGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGenerationService.swift; sourceTree = "<group>"; };
 		SUBSCRIPTION000 /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
-		MAGIC000 /* real-couple walking.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "real-couple walking.png"; sourceTree = "<group>"; };
-		MAGIC002 /* 4-panel-comic.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "4-panel-comic.png"; sourceTree = "<group>"; };
-		MAGIC004 /* action-figures.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "action-figures.png"; sourceTree = "<group>"; };
-		MAGIC006 /* polaroid.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "polaroid.png"; sourceTree = "<group>"; };
-		MAGIC008 /* ukiyo-e.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "ukiyo-e.png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -177,11 +167,6 @@
 				16F250812E8FF55800FF3A0F /* VeramoApp.entitlements */,
 				16F250802E8FF2E400FF3A0F /* Info.plist */,
 				AABBCCDD002 /* couple img styles.csv */,
-				MAGIC000 /* real-couple walking.png */,
-				MAGIC002 /* 4-panel-comic.png */,
-				MAGIC004 /* action-figures.png */,
-				MAGIC006 /* polaroid.png */,
-				MAGIC008 /* ukiyo-e.png */,
 				1A0000000000000000000002 /* VeramoApp.swift */,
 				1A0000000000000000000004 /* ContentView.swift */,
 				2B0000000000000000000009 /* Config */,
@@ -381,11 +366,6 @@
 				1A0000000000000000000005 /* Assets.xcassets in Resources */,
 				AABBCCDD001 /* style-covers in Resources */,
 				AABBCCDD003 /* couple img styles.csv in Resources */,
-				MAGIC001 /* real-couple walking.png in Resources */,
-				MAGIC003 /* 4-panel-comic.png in Resources */,
-				MAGIC005 /* action-figures.png in Resources */,
-				MAGIC007 /* polaroid.png in Resources */,
-				MAGIC009 /* ukiyo-e.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
