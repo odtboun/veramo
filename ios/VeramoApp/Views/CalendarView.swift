@@ -11,6 +11,8 @@ struct CalendarView: View {
     @State private var showingAddMemory = false
     @State private var lastCacheMonth: String? = nil
     @State private var lastUpdateTimestamp: Date? = nil
+    @State private var showingImageFullScreen = false
+    @State private var selectedImageEntry: CalendarEntry? = nil
     
     // Static cache shared across all instances
     static var cachedImages: [String: UIImage] = [:]
@@ -100,7 +102,13 @@ struct CalendarView: View {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
                                     ForEach(entries, id: \.id) { entry in
-                                        CalendarEntryView(entry: entry)
+                                        Button(action: {
+                                            selectedImageEntry = entry
+                                            showingImageFullScreen = true
+                                        }) {
+                                            CalendarEntryView(entry: entry)
+                                        }
+                                        .buttonStyle(.plain)
                                     }
                                 }
                                 .padding(.horizontal)
@@ -116,6 +124,11 @@ struct CalendarView: View {
                 .sheet(isPresented: $showingAddMemory) {
                     AddMemoryView(subscriptionManager: SubscriptionManager())
                 }
+        .overlay {
+            if showingImageFullScreen, let entry = selectedImageEntry {
+                AnimatedImageView(entry: entry, isPresented: $showingImageFullScreen)
+            }
+        }
                 .onAppear {
                     Task { 
                         await loadCalendarData()
@@ -768,6 +781,175 @@ struct CalendarEntryView: View {
                     let (data, _) = try await URLSession.shared.data(from: imageUrl)
                     if let image = UIImage(data: data) {
                         // Cache the image
+                        CalendarView.cachedImages[storagePath] = image
+                        
+                        await MainActor.run {
+                            self.cachedImage = image
+                            self.isLoading = false
+                        }
+                    } else {
+                        await MainActor.run {
+                            self.imageUrl = url
+                            self.isLoading = false
+                        }
+                    }
+                } else {
+                    await MainActor.run {
+                        self.imageUrl = url
+                        self.isLoading = false
+                    }
+                }
+            } catch {
+                print("❌ Failed to load image: \(error)")
+                await MainActor.run {
+                    self.isLoading = false
+                }
+            }
+        } else {
+            await MainActor.run {
+                self.isLoading = false
+            }
+        }
+    }
+}
+
+struct AnimatedImageView: View {
+    let entry: CalendarEntry
+    @Binding var isPresented: Bool
+    @State private var cachedImage: UIImage?
+    @State private var imageUrl: String?
+    @State private var isLoading = true
+    @State private var scale: CGFloat = 0.1
+    @State private var opacity: Double = 0
+    
+    var body: some View {
+        ZStack {
+            // Blurred background
+            Color.black.opacity(0.8)
+                .ignoresSafeArea()
+                .blur(radius: 20)
+                .opacity(opacity)
+            
+            // Image content
+            VStack {
+                Spacer()
+                
+                if let cachedImage = cachedImage {
+                    Image(uiImage: cachedImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+                        .scaleEffect(scale)
+                        .opacity(opacity)
+                } else if let imageUrl = imageUrl {
+                    AsyncImage(url: URL(string: imageUrl)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                            .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+                            .scaleEffect(scale)
+                            .opacity(opacity)
+                    } placeholder: {
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(.ultraThinMaterial)
+                            .aspectRatio(1, contentMode: .fit)
+                            .overlay {
+                                ProgressView()
+                                    .tint(.white)
+                                    .scaleEffect(1.5)
+                            }
+                            .scaleEffect(scale)
+                            .opacity(opacity)
+                    }
+                } else if isLoading {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(.ultraThinMaterial)
+                        .aspectRatio(1, contentMode: .fit)
+                        .overlay {
+                            ProgressView()
+                                .tint(.white)
+                                .scaleEffect(1.5)
+                        }
+                        .scaleEffect(scale)
+                        .opacity(opacity)
+                } else {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(.ultraThinMaterial)
+                        .aspectRatio(1, contentMode: .fit)
+                        .overlay {
+                            VStack(spacing: 16) {
+                                Image(systemName: "photo")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.white)
+                                Text("Image not available")
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .scaleEffect(scale)
+                        .opacity(opacity)
+                }
+                
+                Spacer()
+                
+                // Close button
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        scale = 0.1
+                        opacity = 0
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        isPresented = false
+                    }
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.white)
+                        .background(Color.black.opacity(0.5), in: Circle())
+                }
+                .padding(.bottom, 50)
+                .opacity(opacity)
+            }
+        }
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                scale = 0.1
+                opacity = 0
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                isPresented = false
+            }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.4)) {
+                scale = 1.0
+                opacity = 1.0
+            }
+        }
+        .task {
+            await loadImage()
+        }
+    }
+    
+    private func loadImage() async {
+        // Try to get cached image first
+        if let storagePath = entry.imageData["storage_path"] as? String {
+            if let cachedImage = CalendarView.cachedImages[storagePath] {
+                await MainActor.run {
+                    self.cachedImage = cachedImage
+                    self.isLoading = false
+                }
+                return
+            }
+            
+            // If not cached, download and cache
+            do {
+                let url = try await SupabaseService.shared.getSignedImageURL(storagePath: storagePath)
+                if let imageUrl = URL(string: url) {
+                    let (data, _) = try await URLSession.shared.data(from: imageUrl)
+                    if let image = UIImage(data: data) {
+                        // Cache the image in memory
                         CalendarView.cachedImages[storagePath] = image
                         
                         await MainActor.run {

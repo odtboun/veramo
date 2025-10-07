@@ -107,37 +107,6 @@ struct SettingsView: View {
                     }
                 }
                 
-                // Subscription Section
-                Section("Subscription") {
-                    HStack {
-                        Image(systemName: "crown.fill")
-                            .foregroundColor(.yellow)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Premium Features")
-                                .font(.headline)
-                            
-                            Text("Unlimited AI generation, advanced editing")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        Button("Upgrade") {
-                            // Handle subscription
-                        }
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(.blue.opacity(0.1))
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
                 
                 // App Settings
                 Section("App") {

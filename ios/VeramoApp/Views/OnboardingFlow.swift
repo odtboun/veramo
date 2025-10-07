@@ -360,57 +360,49 @@ struct OnboardingFlow: View {
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
                     Button("Generate & Share") {
-                        print("🎨 Generating shareable image...")
+                        // Create a square image with commitment text
+                        let size = CGSize(width: 600, height: 600)
+                        let renderer = UIGraphicsImageRenderer(size: size)
                         
-                        // Custom square shareable image
-                        let renderer = ImageRenderer(content:
-                            ZStack {
-                                // Solid background color (using a warm gradient for visual appeal)
-                                LinearGradient(
-                                    colors: [Color.pink.opacity(0.1), Color.purple.opacity(0.1)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                                
-                                VStack(alignment: .leading, spacing: 0) {
-                                    Spacer()
-                                    
-                                    // Main commitment text
-                                    Text("I commit to fill our calendar with beautiful memories. Join me on Veramo <3")
-                                        .font(.title2)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.primary)
-                                        .multilineTextAlignment(.leading)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.horizontal, 24)
-                                        .padding(.bottom, 24)
-                                    
-                                    Spacer()
-                                    
-                                    // User name at bottom right
-                                    HStack {
-                                        Spacer()
-                                        Text(userName)
-                                            .font(.headline)
-                                            .fontWeight(.bold)
-                                            .foregroundColor(.pink)
-                                            .padding(.trailing, 24)
-                                            .padding(.bottom, 24)
-                                    }
-                                }
-                            }
-                            .frame(width: 600, height: 600) // Square image
-                        )
-                        
-                        // Debug the image generation
-                        if let ui = renderer.uiImage {
-                            print("✅ Image generated successfully: \(ui.size)")
-                            shareImage = ui
-                            showingShareSheet = true
-                            print("📤 Share sheet should be showing")
-                        } else {
-                            print("❌ Failed to generate image")
+                        let image = renderer.image { context in
+                            // Background
+                            UIColor.systemBackground.setFill()
+                            context.fill(CGRect(origin: .zero, size: size))
+                            
+                            // Add a simple colored rectangle for testing
+                            UIColor.systemPink.withAlphaComponent(0.3).setFill()
+                            context.fill(CGRect(origin: .zero, size: size))
+                            
+                            // Add text
+                            let text = "I commit to fill our calendar with beautiful memories. Join me on Veramo <3"
+                            let attributes: [NSAttributedString.Key: Any] = [
+                                .font: UIFont.systemFont(ofSize: 24, weight: .semibold),
+                                .foregroundColor: UIColor.label
+                            ]
+                            
+                            let textRect = CGRect(x: 24, y: 24, width: size.width - 48, height: size.height - 100)
+                            text.draw(in: textRect, withAttributes: attributes)
+                            
+                            // Add user name at bottom right
+                            let userNameText = userName
+                            let userNameAttributes: [NSAttributedString.Key: Any] = [
+                                .font: UIFont.systemFont(ofSize: 18, weight: .bold),
+                                .foregroundColor: UIColor.systemPink
+                            ]
+                            
+                            let userNameSize = userNameText.size(withAttributes: userNameAttributes)
+                            let userNameRect = CGRect(
+                                x: size.width - userNameSize.width - 24,
+                                y: size.height - userNameSize.height - 24,
+                                width: userNameSize.width,
+                                height: userNameSize.height
+                            )
+                            
+                            userNameText.draw(in: userNameRect, withAttributes: userNameAttributes)
                         }
+                        
+                        shareImage = image
+                        showingShareSheet = true
                     }
                     .font(.headline.weight(.semibold))
                     .frame(maxWidth: .infinity)

@@ -7,6 +7,8 @@ struct TodayView: View {
     @State private var showingAddMemory = false
     @State private var lastStreakCheckDate: String? = nil
     @State private var lastUpdateTimestamp: Date? = nil
+    @State private var showingImageFullScreen = false
+    @State private var selectedImageUrl: String? = nil
     
     var body: some View {
         NavigationView {
@@ -52,22 +54,28 @@ struct TodayView: View {
                             .fontWeight(.semibold)
                         
                         if hasMemory, let imageUrl = todaysImage {
-                            AsyncImage(url: URL(string: imageUrl)) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(1, contentMode: .fit)
-                                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                            } placeholder: {
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(.ultraThinMaterial)
-                                    .aspectRatio(1, contentMode: .fit)
-                                    .overlay {
-                                        ProgressView()
-                                            .scaleEffect(1.2)
-                                    }
+                            Button(action: {
+                                selectedImageUrl = imageUrl
+                                showingImageFullScreen = true
+                            }) {
+                                AsyncImage(url: URL(string: imageUrl)) { image in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(1, contentMode: .fit)
+                                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                                } placeholder: {
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(.ultraThinMaterial)
+                                        .aspectRatio(1, contentMode: .fit)
+                                        .overlay {
+                                            ProgressView()
+                                                .scaleEffect(1.2)
+                                        }
+                                }
+                                .frame(maxWidth: 300)
+                                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                             }
-                            .frame(maxWidth: 300)
-                            .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                            .buttonStyle(.plain)
                         } else {
                             // Empty state - Cute and inviting
                             VStack(spacing: 24) {
@@ -172,6 +180,11 @@ struct TodayView: View {
                 }
             .sheet(isPresented: $showingAddMemory) {
                 AddMemoryView(subscriptionManager: SubscriptionManager())
+            }
+            .overlay {
+                if showingImageFullScreen, let imageUrl = selectedImageUrl {
+                    TodayAnimatedImageView(imageUrl: imageUrl, isPresented: $showingImageFullScreen)
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SmartRefreshRequested"))) { _ in
                 Task { await checkForNewEntries() }
@@ -627,6 +640,84 @@ struct TodayView: View {
             }
         } catch {
             print("❌ TodayView: Failed to check for new entries: \(error)")
+        }
+    }
+}
+
+struct TodayAnimatedImageView: View {
+    let imageUrl: String
+    @Binding var isPresented: Bool
+    @State private var scale: CGFloat = 0.1
+    @State private var opacity: Double = 0
+    
+    var body: some View {
+        ZStack {
+            // Blurred background
+            Color.black.opacity(0.8)
+                .ignoresSafeArea()
+                .blur(radius: 20)
+                .opacity(opacity)
+            
+            // Image content
+            VStack {
+                Spacer()
+                
+                AsyncImage(url: URL(string: imageUrl)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+                        .scaleEffect(scale)
+                        .opacity(opacity)
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(.ultraThinMaterial)
+                        .aspectRatio(1, contentMode: .fit)
+                        .overlay {
+                            ProgressView()
+                                .tint(.white)
+                                .scaleEffect(1.5)
+                        }
+                        .scaleEffect(scale)
+                        .opacity(opacity)
+                }
+                
+                Spacer()
+                
+                // Close button
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        scale = 0.1
+                        opacity = 0
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        isPresented = false
+                    }
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.white)
+                        .background(Color.black.opacity(0.5), in: Circle())
+                }
+                .padding(.bottom, 50)
+                .opacity(opacity)
+            }
+        }
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                scale = 0.1
+                opacity = 0
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                isPresented = false
+            }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.4)) {
+                scale = 1.0
+                opacity = 1.0
+            }
         }
     }
 }
