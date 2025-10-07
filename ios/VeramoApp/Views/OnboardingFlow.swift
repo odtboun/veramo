@@ -52,7 +52,7 @@ struct OnboardingFlow: View {
 
     private var header: some View {
         VStack(spacing: 8) {
-            Text("Step \(step) of 6")
+            Text("Step \(step) of 5")
                 .font(.footnote)
                 .foregroundColor(.secondary)
             pageDots
@@ -64,11 +64,10 @@ struct OnboardingFlow: View {
         Group {
             switch step {
             case 1: step1
-            case 2: step2
-            case 3: step3
-            case 4: step4
-            case 5: step5
-            default: step6
+            case 2: step3 // former step3 becomes step2
+            case 3: step4 // former step4 becomes step3
+            case 4: step5 // former step5 becomes step4
+            default: step6 // former step6 becomes step5
             }
         }
         .animation(.spring(response: 0.5, dampingFraction: 0.9), value: step)
@@ -106,7 +105,7 @@ struct OnboardingFlow: View {
                         // Proceed to next step if partner is not on Veramo
                         withAnimation { step += 1 }
                     }
-                } else if step < 6 {
+                } else if step < 5 {
                     withAnimation { step += 1 }
                 } else {
                     // Temporary: finish onboarding and hand off to paywall elsewhere
@@ -174,7 +173,7 @@ struct OnboardingFlow: View {
 
     private var pageDots: some View {
         HStack(spacing: 6) {
-            ForEach(1...6, id: \.self) { i in
+            ForEach(1...5, id: \.self) { i in
                 Circle()
                     .fill(i == step ? Color.primary : Color.secondary.opacity(0.3))
                     .frame(width: i == step ? 8 : 6, height: i == step ? 8 : 6)
@@ -274,29 +273,7 @@ struct OnboardingFlow: View {
         }
     }
 
-    private var step2: some View {
-        VStack(spacing: 18) {
-            Text("Personalize Your Experience")
-                .font(.largeTitle.bold())
-                .multilineTextAlignment(.center)
-            // Multiple choice: Partner already on Veramo?
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Is your partner already on Veramo?")
-                    .font(.headline)
-                HStack(spacing: 8) {
-                    Button("Yes") { /* store selection later */ }
-                        .buttonStyle(.bordered)
-                    Button("No") { /* store selection later */ }
-                        .buttonStyle(.bordered)
-                }
-            }
-            VStack(alignment: .leading, spacing: 12) {
-                TextField("Partner's name", text: $partnerName)
-                    .textFieldStyle(.roundedBorder)
-                DatePicker("When did your story begin?", selection: $relationshipStart, displayedComponents: .date)
-            }
-        }
-    }
+    // former step2 removed
 
     @State private var selectedStyle: String? = nil
     @State private var isGenerating: Bool = false
@@ -421,11 +398,12 @@ struct OnboardingFlow: View {
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
-            // Media placeholder (calendar illustration)
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.secondary.opacity(0.08))
-                .frame(height: 240)
-                .overlay { Text("Calendar Illustration Placeholder") }
+            // Calendar screenshot from assets, kept square
+            Image("calendar-view")
+                .resizable()
+                .aspectRatio(1, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay { RoundedRectangle(cornerRadius: 16).stroke(Color.secondary.opacity(0.15), lineWidth: 1) }
         }
     }
 
@@ -438,11 +416,12 @@ struct OnboardingFlow: View {
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
-            // Media placeholder (widget mock)
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.secondary.opacity(0.08))
-                .frame(height: 240)
-                .overlay { Text("Widget Mock Placeholder") }
+            // Widget screenshot from assets, kept square
+            Image("widget-view")
+                .resizable()
+                .aspectRatio(1, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay { RoundedRectangle(cornerRadius: 16).stroke(Color.secondary.opacity(0.15), lineWidth: 1) }
         }
     }
 
