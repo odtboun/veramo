@@ -399,14 +399,14 @@ struct OnboardingFlow: View {
                         )
                         if let ui = renderer.uiImage { shareImage = ui; showingShareSheet = true }
                     }
-            .font(.headline.weight(.semibold))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(
-                LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
-            )
-            .foregroundColor(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .font(.headline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
             .shadow(color: .pink.opacity(0.3), radius: 8, x: 0, y: 6)
             .buttonStyle(.plain)
         }
