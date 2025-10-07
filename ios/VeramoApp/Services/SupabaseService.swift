@@ -1,5 +1,6 @@
 import Foundation
 import Supabase
+import Adapty
 
 final class SupabaseService {
     static let shared = SupabaseService()
@@ -16,6 +17,8 @@ final class SupabaseService {
         let user1_id: UUID
         let user2_id: UUID
         let is_active: Bool
+        let user1_adapty_profile_id: String?
+        let user2_adapty_profile_id: String?
     }
     struct Profile: Decodable { let id: UUID }
 
@@ -31,7 +34,7 @@ final class SupabaseService {
             
             let couples: [Couple] = try await client
                 .from("couples")
-                .select("id, user1_id, user2_id, is_active")
+                .select("id, user1_id, user2_id, is_active, user1_adapty_profile_id, user2_adapty_profile_id")
                 .or("user1_id.eq.\(userId),user2_id.eq.\(userId)")
                 .eq("is_active", value: true)
                 .execute().value
@@ -97,16 +100,24 @@ final class SupabaseService {
             throw NSError(domain: "SelfConnection", code: 1, userInfo: [NSLocalizedDescriptionKey: "It's nice to love yourself, but you can't connect with your own code! 😊"])
         }
 
-        // Create new couple
+        // Get current user's Adapty profile ID
+        let currentUserProfile = try await Adapty.getProfile()
+        
+        // Create new couple with current user's Adapty profile ID
+        // Note: We'll need to get the partner's Adapty profile ID when they join
         struct NewCouple: Encodable { 
             let user1_id: UUID
             let user2_id: UUID
             let is_active: Bool
+            let user1_adapty_profile_id: String?
+            let user2_adapty_profile_id: String
         }
         _ = try await client.from("couples").insert(NewCouple(
             user1_id: partnerUserId,
             user2_id: myUserId,
-            is_active: true
+            is_active: true,
+            user1_adapty_profile_id: nil, // Partner's profile ID will be added later
+            user2_adapty_profile_id: currentUserProfile.profileId
         )).execute()
         
         // Mark code as redeemed
@@ -128,6 +139,71 @@ final class SupabaseService {
             .or("user1_id.eq.\(userId),user2_id.eq.\(userId)")
             .eq("is_active", value: true)
             .execute()
+    }
+    
+    // MARK: - Couple Subscription Management
+    
+    func updateCoupleWithAdaptyProfile() async throws {
+        let userId = try await currentUserId()
+        let currentUserProfile = try await Adapty.getProfile()
+        
+        guard let couple = await fetchCouple() else {
+            print("❌ No active couple found to update")
+            return
+        }
+        
+        // Determine which field to update based on user position in couple
+        let updateData: [String: String]
+        if userId == couple.user1_id {
+            updateData = ["user1_adapty_profile_id": currentUserProfile.profileId]
+        } else if userId == couple.user2_id {
+            updateData = ["user2_adapty_profile_id": currentUserProfile.profileId]
+        } else {
+            print("❌ User not found in couple")
+            return
+        }
+        
+        // Update the couple record with current user's Adapty profile ID
+        _ = try await client.from("couples")
+            .update(updateData)
+            .eq("id", value: couple.id)
+            .execute()
+            
+        print("✅ Updated couple with Adapty profile ID: \(currentUserProfile.profileId)")
+    }
+    
+    func checkCoupleSubscriptionStatus() async throws -> Bool {
+        guard let couple = await fetchCouple(), couple.is_active else {
+            print("💑 No active couple found")
+            return false
+        }
+        
+        print("💑 Checking subscription for couple: \(couple.id)")
+        
+        // Check if either partner is subscribed
+        for (index, profileId) in [couple.user1_adapty_profile_id, couple.user2_adapty_profile_id].enumerated() {
+            if let profileId = profileId {
+                do {
+                    // Switch to the partner's profile to check their subscription
+                    try await Adapty.identify(profileId)
+                    let profile = try await Adapty.getProfile()
+                    let isSubscribed = profile.accessLevels["premium"]?.isActive ?? false
+                    print("👤 Partner \(index + 1) subscription status: \(isSubscribed ? "Subscribed" : "Not subscribed")")
+                    
+                    if isSubscribed {
+                        print("✅ At least one partner is subscribed!")
+                        return true
+                    }
+                } catch {
+                    print("⚠️ Error checking partner \(index + 1) subscription: \(error)")
+                }
+            } else {
+                print("⚠️ Partner \(index + 1) Adapty profile ID not found")
+            }
+        }
+        
+        print("❌ Neither partner is subscribed")
+        return false
     }
     
         // MARK: - Calendar Entries

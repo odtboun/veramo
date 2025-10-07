@@ -23,9 +23,18 @@ class SubscriptionManager: ObservableObject, AdaptyDelegate {
     
     nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
         Task { @MainActor in
-            self.isSubscribed = profile.accessLevels[self.accessLevel]?.isActive ?? false
-            self.isLoading = false
-            print("📱 Subscription status updated: \(self.isSubscribed ? "Subscribed" : "Not subscribed")")
+            // Update couple with current user's profile and check couple subscription
+            do {
+                try await SupabaseService.shared.updateCoupleWithAdaptyProfile()
+                let coupleHasAccess = try await SupabaseService.shared.checkCoupleSubscriptionStatus()
+                self.isSubscribed = coupleHasAccess
+                self.isLoading = false
+                print("💑 Couple subscription status updated: \(self.isSubscribed ? "At least one partner subscribed" : "Neither partner subscribed")")
+            } catch {
+                print("❌ Error updating couple subscription status: \(error)")
+                self.isSubscribed = false
+                self.isLoading = false
+            }
         }
     }
     
@@ -33,12 +42,16 @@ class SubscriptionManager: ObservableObject, AdaptyDelegate {
     
     func checkSubscriptionStatus() async {
         do {
-            let profile = try await Adapty.getProfile()
-            isSubscribed = profile.accessLevels[accessLevel]?.isActive ?? false
+            // First, update the couple with current user's Adapty profile ID
+            try await SupabaseService.shared.updateCoupleWithAdaptyProfile()
+            
+            // Then check if either partner in the couple is subscribed
+            let coupleHasAccess = try await SupabaseService.shared.checkCoupleSubscriptionStatus()
+            isSubscribed = coupleHasAccess
             isLoading = false
-            print("📱 Current subscription status: \(isSubscribed ? "Subscribed" : "Not subscribed")")
+            print("💑 Couple subscription status: \(isSubscribed ? "At least one partner subscribed" : "Neither partner subscribed")")
         } catch {
-            print("❌ Error checking subscription status: \(error)")
+            print("❌ Error checking couple subscription status: \(error)")
             isSubscribed = false
             isLoading = false
         }
