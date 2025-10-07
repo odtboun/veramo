@@ -1,12 +1,16 @@
 import SwiftUI
 import Observation
 import Supabase
+import Adapty
 
 struct SettingsView: View {
     @Bindable var authVM: AuthViewModel
     @State private var hasPartner = false
     @State private var showingPartnerConnection = false
     @State private var isRemovingPartner = false
+    @State private var isCheckingSubscription = false
+    @State private var isSubscribed = false
+    @State private var subscriptionError: String?
     
     var body: some View {
         NavigationView {
@@ -107,6 +111,41 @@ struct SettingsView: View {
                     }
                 }
                 
+                // Subscription Section
+                Section("Subscription") {
+                    HStack {
+                        Image(systemName: "star.circle.fill")
+                            .foregroundColor(.yellow)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Status")
+                                .font(.headline)
+                            if isCheckingSubscription {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text("Checking...")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                            } else if let subscriptionError = subscriptionError {
+                                Text(subscriptionError)
+                                    .font(.subheadline)
+                                    .foregroundColor(.red)
+                            } else {
+                                Text(isSubscribed ? "Subscribed" : "Not Subscribed")
+                                    .font(.subheadline)
+                                    .foregroundColor(isSubscribed ? .green : .secondary)
+                            }
+                        }
+                        Spacer()
+                        Button(action: checkSubscriptionStatus) {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .disabled(isCheckingSubscription)
+                    }
+                    .padding(.vertical, 4)
+                }
+                
                 
                 // App Settings
                 Section("App") {
@@ -133,12 +172,14 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
                 checkPartnerStatus()
+                checkSubscriptionStatus()
             }
         }
         .sheet(isPresented: $showingPartnerConnection) {
             PartnerConnectionView()
                 .onDisappear {
                     checkPartnerStatus()
+                    checkSubscriptionStatus()
                 }
         }
     }
@@ -166,6 +207,38 @@ struct SettingsView: View {
                     isRemovingPartner = false
                     print("Failed to remove partner: \(error)")
                 }
+            }
+        }
+    }
+
+    private func checkSubscriptionStatus() {
+        isCheckingSubscription = true
+        subscriptionError = nil
+        Task {
+            do {
+                // If part of an active couple, check couple-level subscription
+                if let couple = await SupabaseService.shared.fetchCouple(), couple.is_active {
+                    let coupleSubscribed = try await SupabaseService.shared.checkCoupleSubscriptionStatus()
+                    await MainActor.run {
+                        self.isSubscribed = coupleSubscribed
+                        self.isCheckingSubscription = false
+                    }
+                } else {
+                    // Fallback: check current user's Adapty profile directly
+                    let profile = try await Adapty.getProfile()
+                    let active = profile.accessLevels["premium"]?.isActive ?? false
+                    await MainActor.run {
+                        self.isSubscribed = active
+                        self.isCheckingSubscription = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.subscriptionError = "Failed to check subscription"
+                    self.isSubscribed = false
+                    self.isCheckingSubscription = false
+                }
+                print("❌ Subscription check failed: \(error)")
             }
         }
     }
