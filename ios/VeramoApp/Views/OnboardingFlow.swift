@@ -1,6 +1,11 @@
 import SwiftUI
 import Adapty
 
+enum PartnerStatus: String, CaseIterable {
+    case yes = "Yes, my partner is already on Veramo"
+    case no = "No, my partner is not on Veramo yet"
+}
+
 struct OnboardingFlow: View {
     let partnerAlreadyOnboarded: Bool
     let onFinish: () -> Void
@@ -10,6 +15,7 @@ struct OnboardingFlow: View {
     @State private var showingShareSheet: Bool = false
     @State private var shareImage: UIImage? = nil
     @State private var animateBlob: Bool = false // unused after redesign; kept to avoid accidental rebuild churn
+    @State private var partnerSelection: PartnerStatus? = nil // NEW: Track partner selection
     
     var body: some View {
         VStack(spacing: 0) {
@@ -106,6 +112,8 @@ struct OnboardingFlow: View {
                 .shadow(color: .pink.opacity(0.3), radius: 8, x: 0, y: 6)
             }
             .buttonStyle(.plain)
+            .disabled(step == 1 && partnerSelection == nil) // Disable if on step 1 and no partner selection
+            .opacity(step == 1 && partnerSelection == nil ? 0.5 : 1.0) // Visual feedback for disabled state
         }
     }
 
@@ -135,11 +143,53 @@ struct OnboardingFlow: View {
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
+            
             // Media placeholder (illustration)
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.secondary.opacity(0.08))
                 .frame(height: 240)
                 .overlay { Text("Illustration Placeholder") }
+            
+            // Partner question
+            VStack(spacing: 12) {
+                Text("Is your partner already on Veramo?")
+                    .font(.title2.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                
+                VStack(spacing: 8) {
+                    ForEach(PartnerStatus.allCases, id: \.self) { status in
+                        Button(action: {
+                            partnerSelection = status
+                        }) {
+                            HStack {
+                                Text(status.rawValue)
+                                    .font(.body.weight(.medium))
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                if partnerSelection == status {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.pink)
+                                } else {
+                                    Image(systemName: "circle")
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(partnerSelection == status ? Color.pink.opacity(0.1) : Color.secondary.opacity(0.05))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(partnerSelection == status ? Color.pink : Color.clear, lineWidth: 2)
+                                    )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .padding(.top, 8)
         }
     }
 
