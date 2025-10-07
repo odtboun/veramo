@@ -2,8 +2,8 @@ import SwiftUI
 import Adapty
 
 enum PartnerStatus: String, CaseIterable {
-    case yes = "Yes, my partner is already on Veramo"
-    case no = "No, my partner is not on Veramo yet"
+    case yes = "Yes"
+    case no = "No"
 }
 
 struct OnboardingFlow: View {
@@ -203,7 +203,7 @@ struct OnboardingFlow: View {
                     .font(.title2.weight(.semibold))
                     .multilineTextAlignment(.center)
                 
-                VStack(spacing: 8) {
+                HStack(spacing: 12) {
                     ForEach(PartnerStatus.allCases, id: \.self) { status in
                         Button(action: {
                             partnerSelection = status
@@ -213,29 +213,19 @@ struct OnboardingFlow: View {
                                 connectionError = nil
                             }
                         }) {
-                            HStack {
-                                Text(status.rawValue)
-                                    .font(.body.weight(.medium))
-                                    .foregroundColor(.primary)
-                                Spacer()
-                                if partnerSelection == status {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.pink)
-                                } else {
-                                    Image(systemName: "circle")
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(partnerSelection == status ? Color.pink.opacity(0.1) : Color.secondary.opacity(0.05))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(partnerSelection == status ? Color.pink : Color.clear, lineWidth: 2)
-                                    )
-                            )
+                            Text(status.rawValue)
+                                .font(.headline.weight(.semibold))
+                                .foregroundColor(partnerSelection == status ? .white : .primary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(partnerSelection == status ? Color.pink : Color.secondary.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(partnerSelection == status ? Color.pink : Color.clear, lineWidth: 2)
+                                        )
+                                )
                         }
                         .buttonStyle(.plain)
                     }
