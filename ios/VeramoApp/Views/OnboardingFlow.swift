@@ -19,6 +19,7 @@ struct OnboardingFlow: View {
     @State private var inviteCode: String = "" // NEW: Track invite code input
     @State private var isConnecting: Bool = false // NEW: Track connection state
     @State private var connectionError: String? = nil // NEW: Track connection errors
+    @State private var userName: String = "love" // NEW: Default user name for shareable image
     
     var body: some View {
         VStack(spacing: 0) {
@@ -356,25 +357,48 @@ struct OnboardingFlow: View {
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
-            Button("Generate & Share") {
-                // Simple placeholder share card
-                let renderer = ImageRenderer(content:
-                    ZStack {
-                        Color.white
-                        VStack(spacing: 10) {
-                            Text("Veramo Commitment")
-                                .font(.title2).bold().foregroundColor(.black)
-                            Text("I'm committing to creating beautiful memories for a year & beyond.")
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(.black)
-                                .padding()
-                        }
-                        .padding()
+                    Button("Generate & Share") {
+                        // Custom square shareable image
+                        let renderer = ImageRenderer(content:
+                            ZStack {
+                                // Solid background color (using a warm gradient for visual appeal)
+                                LinearGradient(
+                                    colors: [Color.pink.opacity(0.1), Color.purple.opacity(0.1)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                                
+                                VStack(alignment: .leading, spacing: 0) {
+                                    Spacer()
+                                    
+                                    // Main commitment text
+                                    Text("I commit to fill our calendar with beautiful memories. Join me on Veramo <3")
+                                        .font(.title2)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.primary)
+                                        .multilineTextAlignment(.leading)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 24)
+                                        .padding(.bottom, 24)
+                                    
+                                    Spacer()
+                                    
+                                    // User name at bottom right
+                                    HStack {
+                                        Spacer()
+                                        Text(userName)
+                                            .font(.headline)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.pink)
+                                            .padding(.trailing, 24)
+                                            .padding(.bottom, 24)
+                                    }
+                                }
+                            }
+                            .frame(width: 600, height: 600) // Square image
+                        )
+                        if let ui = renderer.uiImage { shareImage = ui; showingShareSheet = true }
                     }
-                    .frame(width: 800, height: 1000)
-                )
-                if let ui = renderer.uiImage { shareImage = ui; showingShareSheet = true }
-            }
             .font(.headline.weight(.semibold))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
