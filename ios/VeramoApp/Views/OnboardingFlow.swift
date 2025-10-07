@@ -16,6 +16,9 @@ struct OnboardingFlow: View {
     @State private var shareImage: UIImage? = nil
     @State private var animateBlob: Bool = false // unused after redesign; kept to avoid accidental rebuild churn
     @State private var partnerSelection: PartnerStatus? = nil // NEW: Track partner selection
+    @State private var inviteCode: String = "" // NEW: Track invite code input
+    @State private var isConnecting: Bool = false // NEW: Track connection state
+    @State private var connectionError: String? = nil // NEW: Track connection errors
     
     var body: some View {
         VStack(spacing: 0) {
@@ -89,7 +92,18 @@ struct OnboardingFlow: View {
             }
             Spacer(minLength: 0)
             Button(action: {
-                if step < 6 {
+                if step == 1 {
+                    // Handle step 1 logic
+                    if partnerSelection == .yes && !inviteCode.isEmpty {
+                        // Connect with partner using invite code
+                        Task {
+                            await connectWithPartner()
+                        }
+                    } else if partnerSelection == .no {
+                        // Proceed to next step if partner is not on Veramo
+                        withAnimation { step += 1 }
+                    }
+                } else if step < 6 {
                     withAnimation { step += 1 }
                 } else {
                     // Temporary: finish onboarding and hand off to paywall elsewhere
@@ -98,9 +112,17 @@ struct OnboardingFlow: View {
                 }
             }) {
                 HStack(spacing: 8) {
-                    Text(step < 6 ? "Continue" : "Get started")
-                        .font(.headline.weight(.semibold))
-                    Image(systemName: step < 6 ? "arrow.right" : "creditcard")
+                    if step == 1 && partnerSelection == .yes && isConnecting {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(0.8)
+                        Text("Connecting...")
+                            .font(.headline.weight(.semibold))
+                    } else {
+                        Text(step < 6 ? "Continue" : "Get started")
+                            .font(.headline.weight(.semibold))
+                        Image(systemName: step < 6 ? "arrow.right" : "creditcard")
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
@@ -112,13 +134,38 @@ struct OnboardingFlow: View {
                 .shadow(color: .pink.opacity(0.3), radius: 8, x: 0, y: 6)
             }
             .buttonStyle(.plain)
-            .disabled(step == 1 && partnerSelection == nil) // Disable if on step 1 and no partner selection
-            .opacity(step == 1 && partnerSelection == nil ? 0.5 : 1.0) // Visual feedback for disabled state
+            .disabled(step == 1 && (partnerSelection == nil || (partnerSelection == .yes && inviteCode.isEmpty))) // Disable if no selection or if partner is yes but no invite code
+            .opacity(step == 1 && (partnerSelection == nil || (partnerSelection == .yes && inviteCode.isEmpty)) ? 0.5 : 1.0) // Visual feedback for disabled state
         }
     }
 
     // Removed card wrapper to keep steps full-screen on white background
     private func card(_ inner: some View) -> some View { inner }
+    
+    // MARK: - Partner Connection
+    
+    private func connectWithPartner() async {
+        guard !inviteCode.isEmpty else { return }
+        
+        await MainActor.run {
+            isConnecting = true
+            connectionError = nil
+        }
+        
+        do {
+            try await SupabaseService.shared.joinWithCode(inviteCode)
+            await MainActor.run {
+                isConnecting = false
+                // Success - proceed to next step
+                withAnimation { step += 1 }
+            }
+        } catch {
+            await MainActor.run {
+                isConnecting = false
+                connectionError = "Failed to connect: \(error.localizedDescription)"
+            }
+        }
+    }
 
     // (Paywall presentation will be wired from root after this screen if needed.)
 
@@ -160,6 +207,11 @@ struct OnboardingFlow: View {
                     ForEach(PartnerStatus.allCases, id: \.self) { status in
                         Button(action: {
                             partnerSelection = status
+                            // Clear invite code when switching selections
+                            if status == .no {
+                                inviteCode = ""
+                                connectionError = nil
+                            }
                         }) {
                             HStack {
                                 Text(status.rawValue)
@@ -187,6 +239,43 @@ struct OnboardingFlow: View {
                         }
                         .buttonStyle(.plain)
                     }
+                }
+                
+                // Show invite code input only if partner is already on Veramo
+                if partnerSelection == .yes {
+                    VStack(spacing: 8) {
+                        Text("Your partner's invite code:")
+                            .font(.headline.weight(.semibold))
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 8)
+                        
+                        TextField("Enter invite code", text: $inviteCode)
+                            .textFieldStyle(.roundedBorder)
+                            .textInputAutocapitalization(.characters)
+                            .autocorrectionDisabled()
+                            .onChange(of: inviteCode) { _, newValue in
+                                // Clear error when user starts typing
+                                connectionError = nil
+                            }
+                        
+                        if let error = connectionError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundColor(.red)
+                                .multilineTextAlignment(.center)
+                        }
+                        
+                        if isConnecting {
+                            HStack {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text("Connecting...")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    .padding(.top, 8)
                 }
             }
             .padding(.top, 8)
