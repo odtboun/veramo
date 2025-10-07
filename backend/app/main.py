@@ -248,13 +248,13 @@ def generate_with_fal_ai(description, images, style_label):
                     except Exception as decode_error:
                         print(f"❌ Base64 decode error: {decode_error}")
                         print("⚠️ Base64 decode failed, falling back to placeholder")
-                        return generate_placeholder_image(description, images, style_label)
+                        raise RuntimeError("Failed to decode base64 image data from model output")
                 
                 # More lenient URL validation for HTTP URLs - just check if it's a non-empty string
                 elif not url_str or len(url_str) < 10:
                     print(f"❌ Invalid image URL format: {repr(image_url)}")
                     print("⚠️ Invalid URL format, falling back to placeholder")
-                    return generate_placeholder_image(description, images, style_label)
+                    raise RuntimeError("Invalid image URL returned by model")
                 
                 # Try to download the image from HTTP URL
                 print(f"🖼️ Attempting to download image from: {url_str}")
@@ -268,16 +268,16 @@ def generate_with_fal_ai(description, images, style_label):
                         print(f"❌ Failed to download image: {response.status_code}")
                         print(f"❌ Response content: {response.text[:200]}...")
                         print("⚠️ Image download failed, falling back to placeholder")
-                        return generate_placeholder_image(description, images, style_label)
+                        raise RuntimeError(f"Image download failed: status {response.status_code}")
                 except Exception as download_error:
                     print(f"❌ Download error: {download_error}")
                     print("⚠️ Image download failed, falling back to placeholder")
-                    return generate_placeholder_image(description, images, style_label)
+                    raise RuntimeError("Error downloading image from returned URL")
             else:
                 print(f"❌ No image URL found in result: {result}")
                 # Fallback to placeholder if result format is unexpected
                 print("⚠️ Unexpected result format, falling back to placeholder")
-                return generate_placeholder_image(description, images, style_label)
+                raise RuntimeError("No image URL found in model result")
         except Exception as e:
             print(f"❌ Error getting result from fal.ai: {e}")
             print(f"❌ Error type: {type(e)}")
@@ -285,14 +285,14 @@ def generate_with_fal_ai(description, images, style_label):
             print(f"❌ Traceback: {traceback.format_exc()}")
             # Fallback to placeholder if any error occurs
             print("⚠️ fal.ai error, falling back to placeholder")
-            return generate_placeholder_image(description, images, style_label)
+            raise
         
     except Exception as e:
         print(f"❌ fal.ai error: {e}")
         import traceback
         print(f"❌ Full traceback: {traceback.format_exc()}")
         # Fallback to placeholder
-        return generate_placeholder_image(description, images, style_label)
+        raise
 
 def generate_with_nano_banana(description, style_label):
     """
@@ -488,22 +488,9 @@ def generate_image():
                     file.save(file_path)
                     images.append(file_path)
         
-        # Check if we should use fal.ai or placeholder
-        use_fal_ai = description.strip()  # Use fal.ai if we have a description
-        
-        if use_fal_ai:
-            if len(images) >= 2:
-                # Use fal.ai FLUX Pro Kontext Multi for multi-image generation
-                generated_img = generate_with_fal_ai(description, images, style_label)
-            elif len(images) == 0:
-                # Use fal.ai nano-banana for text-only generation (no images)
-                generated_img = generate_with_nano_banana(description, style_label)
-            else:
-                # Use placeholder function for single image (fal.ai doesn't handle single images well)
-                generated_img = generate_placeholder_image(description, images, style_label)
-        else:
-            # Use placeholder function
-            generated_img = generate_placeholder_image(description, images, style_label)
+        # Always use fal.ai routing (no placeholders). For 1+ images, use the same flow as 2+.
+        # Text-only requests are also routed inside generate_with_fal_ai.
+        generated_img = generate_with_fal_ai(description, images, style_label)
         
         # Save generated image to temporary file
         output_path = os.path.join(UPLOAD_FOLDER, f"generated_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.png")

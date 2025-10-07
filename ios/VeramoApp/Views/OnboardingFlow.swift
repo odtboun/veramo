@@ -196,7 +196,6 @@ struct OnboardingFlow: View {
                 .resizable()
                 .aspectRatio(1, contentMode: .fit)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay { RoundedRectangle(cornerRadius: 16).stroke(Color.secondary.opacity(0.15), lineWidth: 1) }
             
             // Partner question
             VStack(spacing: 12) {
@@ -250,7 +249,7 @@ struct OnboardingFlow: View {
                             }
                         
                         if let error = connectionError {
-                            Text(error)
+                            Text("Invalid code, please check carefully")
                                 .font(.caption)
                                 .foregroundColor(.red)
                                 .multilineTextAlignment(.center)
@@ -391,7 +390,7 @@ struct OnboardingFlow: View {
 
     private var step4: some View {
         VStack(spacing: 18) {
-            Text("Your Shared Timeline")
+            Text("Days Full of Your Favorite Memories")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
             Text("Memories land on your shared calendar. Schedule gifts in advance.")
@@ -403,7 +402,6 @@ struct OnboardingFlow: View {
                 .resizable()
                 .aspectRatio(1, contentMode: .fit)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay { RoundedRectangle(cornerRadius: 16).stroke(Color.secondary.opacity(0.15), lineWidth: 1) }
         }
     }
 
@@ -421,7 +419,6 @@ struct OnboardingFlow: View {
                 .resizable()
                 .aspectRatio(1, contentMode: .fit)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay { RoundedRectangle(cornerRadius: 16).stroke(Color.secondary.opacity(0.15), lineWidth: 1) }
         }
     }
 
