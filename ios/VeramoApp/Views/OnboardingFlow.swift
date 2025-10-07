@@ -3,7 +3,7 @@ import Adapty
 
 enum PartnerStatus: String, CaseIterable {
     case yes = "Yes"
-    case no = "No"
+    case no = "Not Yet"
 }
 
 struct OnboardingFlow: View {
@@ -189,16 +189,15 @@ struct OnboardingFlow: View {
             Text("The Easiest Way to Build Your Shared Story.")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
-            Text("Turn everyday moments into a beautiful visual keepsake you both build over time.")
-                .font(.title3.weight(.semibold))
-                .multilineTextAlignment(.center)
-                .foregroundColor(.secondary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
             
-            // Media placeholder (illustration)
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.secondary.opacity(0.08))
-                .frame(height: 240)
-                .overlay { Text("Illustration Placeholder") }
+            // Media: square image from assets
+            Image("calendar-photos")
+                .resizable()
+                .aspectRatio(1, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay { RoundedRectangle(cornerRadius: 16).stroke(Color.secondary.opacity(0.15), lineWidth: 1) }
             
             // Partner question
             VStack(spacing: 12) {

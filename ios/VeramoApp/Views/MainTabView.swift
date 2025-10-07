@@ -175,17 +175,17 @@ struct CreateTabView: View {
                                     ZStack(alignment: .bottomLeading) {
                                         Image(uiImage: UIImage(named: item.coverName) ?? UIImage())
                                             .resizable()
-                                            .scaledToFill()
-                                        .frame(height: 160)
-                                        .clipped()
-                                        .overlay {
-                                            // Stronger bottom gradient for title readability
-                                            LinearGradient(
-                                                colors: [Color.black.opacity(0.0), Color.black.opacity(0.55)],
-                                                startPoint: .top,
-                                                endPoint: .bottom
-                                            )
-                                        }
+                                            .aspectRatio(1, contentMode: .fit)
+                                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                                            .overlay {
+                                                // Stronger bottom gradient for title readability
+                                                LinearGradient(
+                                                    colors: [Color.black.opacity(0.0), Color.black.opacity(0.55)],
+                                                    startPoint: .top,
+                                                    endPoint: .bottom
+                                                )
+                                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                            }
                                         
                                         Text(item.title)
                                             .font(.headline)

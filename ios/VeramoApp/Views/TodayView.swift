@@ -77,25 +77,11 @@ struct TodayView: View {
                             }
                             .buttonStyle(.plain)
                         } else {
-                            // Empty state - Cute and inviting
+                            // Empty state - Simple and expressive
                             VStack(spacing: 24) {
-                                // Cute heart icon with sparkles
-                                ZStack {
-                                    Circle()
-                                        .fill(.pink.opacity(0.1))
-                                        .frame(width: 120, height: 120)
-                                    
-                                    VStack(spacing: 8) {
-                                        Image(systemName: "heart.fill")
-                                            .font(.system(size: 40))
-                                            .foregroundColor(.pink)
-                                        
-                                        Image(systemName: "sparkles")
-                                            .font(.system(size: 16))
-                                            .foregroundColor(.yellow)
-                                            .offset(x: 20, y: -10)
-                                    }
-                                }
+                                Text("😔")
+                                    .font(.system(size: 80))
+                                    .frame(width: 120, height: 120)
                                 
                                 VStack(spacing: 12) {
                                     Text("No Memory Today")

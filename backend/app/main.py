@@ -89,7 +89,8 @@ def select_model_and_preprocess(description, images, style_label):
 
 def generate_with_fal_ai(description, images, style_label):
     """
-    Generate image using fal.ai FLUX Pro Kontext Multi
+    Generate image using fal.ai. Switched to Gemini 2.5 Flash Image.
+    Previously: FLUX Pro Kontext Multi (commented out below).
     """
     try:
         # Configure fal.ai client
@@ -153,7 +154,7 @@ def generate_with_fal_ai(description, images, style_label):
         enhanced_prompt = f"{description} (style: {style_label})"
         print(f"📝 Enhanced prompt: {enhanced_prompt}")
         
-        # Prepare the request payload
+        # Prepare the request payload (kept generic to work across providers)
         payload = {
             "prompt": enhanced_prompt,
             "image_urls": image_urls,
@@ -168,7 +169,12 @@ def generate_with_fal_ai(description, images, style_label):
         print(f"🚀 Calling fal.ai with payload: {json.dumps(payload, indent=2)}")
         
         # Call fal.ai API
-        result_handle = fal_client.submit("fal-ai/flux-pro/kontext/multi", payload)
+        # FLUX (previous):
+        # result_handle = fal_client.submit("fal-ai/flux-pro/kontext/multi", payload)
+        # Gemini 2.5 Flash Image (current):
+        model_id = "fal-ai/gemini-25-flash-image"
+        print(f"🧠 Using model: {model_id} (images attached: {len(image_urls)})")
+        result_handle = fal_client.submit(model_id, payload)
         print(f"🎯 fal.ai result handle type: {type(result_handle)}")
         print(f"🎯 fal.ai result handle: {result_handle}")
         
