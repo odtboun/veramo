@@ -108,21 +108,57 @@ final class SupabaseService {
         // Get current user's Adapty profile ID
         let currentUserProfile = try await Adapty.getProfile()
         
-        // Create new couple with BOTH Adapty profile IDs
-        struct NewCouple: Encodable { 
-            let user1_id: UUID
-            let user2_id: UUID
-            let is_active: Bool
-            let user1_adapty_profile_id: String
-            let user2_adapty_profile_id: String
+        // Check for existing inactive couple between these two users
+        let existingCouples: [Couple] = try await client
+            .from("couples")
+            .select("id, user1_id, user2_id, is_active, user1_adapty_profile_id, user2_adapty_profile_id")
+            .or("user1_id.eq.\(myUserId),user2_id.eq.\(myUserId)")
+            .or("user1_id.eq.\(partnerUserId),user2_id.eq.\(partnerUserId)")
+            .eq("is_active", value: false)
+            .execute().value
+        
+        // Find couple that includes both users
+        let existingCouple = existingCouples.first { couple in
+            let userIds = [couple.user1_id, couple.user2_id]
+            return userIds.contains(myUserId) && userIds.contains(partnerUserId)
         }
-        _ = try await client.from("couples").insert(NewCouple(
-            user1_id: partnerUserId,
-            user2_id: myUserId,
-            is_active: true,
-            user1_adapty_profile_id: found.inviter_adapty_profile_id, // From pairing code
-            user2_adapty_profile_id: currentUserProfile.profileId // Current user
-        )).execute()
+        
+        if let existingCouple = existingCouple {
+            // Reactivate existing couple and update Adapty profile IDs
+            print("🔄 Reactivating existing couple: \(existingCouple.id)")
+            
+            // Determine which user is which based on the existing couple structure
+            let isMyUserId1 = existingCouple.user1_id == myUserId
+            let updateData: [String: String] = [
+                "is_active": "true",
+                isMyUserId1 ? "user1_adapty_profile_id" : "user2_adapty_profile_id": currentUserProfile.profileId,
+                isMyUserId1 ? "user2_adapty_profile_id" : "user1_adapty_profile_id": found.inviter_adapty_profile_id
+            ]
+            
+            _ = try await client.from("couples")
+                .update(updateData)
+                .eq("id", value: existingCouple.id)
+                .execute()
+            
+            print("✅ Reactivated couple with updated Adapty profile IDs")
+        } else {
+            // Create new couple with BOTH Adapty profile IDs
+            print("🆕 Creating new couple")
+            struct NewCouple: Encodable { 
+                let user1_id: UUID
+                let user2_id: UUID
+                let is_active: Bool
+                let user1_adapty_profile_id: String
+                let user2_adapty_profile_id: String
+            }
+            _ = try await client.from("couples").insert(NewCouple(
+                user1_id: partnerUserId,
+                user2_id: myUserId,
+                is_active: true,
+                user1_adapty_profile_id: found.inviter_adapty_profile_id, // From pairing code
+                user2_adapty_profile_id: currentUserProfile.profileId // Current user
+            )).execute()
+        }
         
         // Mark code as redeemed
         _ = try await client.from("pairing_codes")
