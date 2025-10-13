@@ -15,38 +15,10 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             List {
-                // Profile Section
-                Section {
-                    HStack {
-                        AsyncImage(url: URL(string: "https://picsum.photos/60/60?random=1")) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(1, contentMode: .fit)
-                                .clipShape(Circle())
-                        } placeholder: {
-                            Circle()
-                                .fill(.ultraThinMaterial)
-                                .overlay {
-                                    Image(systemName: "person.fill")
-                                        .foregroundColor(.secondary)
-                                }
-                        }
-                        .frame(width: 60, height: 60)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Your Profile")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                            
-                            Text(hasPartner ? "Connected" : "Not Connected")
-                                .font(.subheadline)
-                                .foregroundColor(hasPartner ? .green : .secondary)
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.vertical, 8)
-                }
+                // Top padding since profile section is removed (match grouped background)
+                Color(UIColor.systemGroupedBackground)
+                    .frame(height: 12)
+                    .listRowBackground(Color(UIColor.systemGroupedBackground))
                 
                 // Partner Section
                 Section("Partner") {

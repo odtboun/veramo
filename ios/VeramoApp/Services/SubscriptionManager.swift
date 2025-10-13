@@ -8,6 +8,10 @@ class SubscriptionManager: ObservableObject, AdaptyDelegate {
     @Published var isSubscribed: Bool = false
     @Published var isLoading: Bool = true
     
+    // First-time free flags (device storage)
+    @AppStorage("hasTriedGenerate") private var hasTriedGenerate = false
+    @AppStorage("hasTriedAddToCalendar") private var hasTriedAddToCalendar = false
+    
     private let accessLevel = "premium" // Using Adapty's default premium access level
     private var paywallDelegate: PaywallDelegate?
     
@@ -65,7 +69,20 @@ class SubscriptionManager: ObservableObject, AdaptyDelegate {
             return true
         }
         
-        // Show paywall for non-subscribers
+        // Check for first-time free attempts
+        if placementId == "in-app-weekly" && !hasTriedGenerate {
+            hasTriedGenerate = true
+            print("🎁 First-time free: Generate feature allowed")
+            return true
+        }
+        
+        if placementId == "in-app-placement" && !hasTriedAddToCalendar {
+            hasTriedAddToCalendar = true
+            print("🎁 First-time free: Add to Calendar feature allowed")
+            return true
+        }
+        
+        // Show paywall for non-subscribers (after first attempt)
         await presentPaywall(placementId: placementId)
         return false
     }

@@ -5,6 +5,7 @@ import os
 import io
 from datetime import datetime
 from PIL import Image, ImageDraw
+import base64
 import tempfile
 import json
 import fal_client
@@ -139,25 +140,12 @@ def generate_with_fal_ai(description, images, style_label):
         enhanced_prompt = f"{description} (style: {style_label})"
         print(f"📝 Enhanced prompt: {enhanced_prompt}")
         
-        # Prepare the request payload (kept generic to work across providers)
-        payload = {
-            "prompt": enhanced_prompt,
-            "image_urls": image_urls,
-            "sync_mode": False,  # Don't wait for completion
-            "output_format": "jpeg",
-            "safety_tolerance": "4",
-            "enhance_prompt": True,
-            "aspect_ratio": "1:1",
-            "num_images": 1
-        }
-        
-        print(f"🚀 Calling fal.ai with payload: {json.dumps(payload, indent=2)}")
-        
         # Select model based on inputs
         style_normalized = (style_label or "").strip().lower()
         flux_styles = {"claymotion", "fantasy illustration", "gothic victorian", "steampunk"}
-        if len(image_urls) > 0:
-            # With references: default to Gemini edit, but for exactly 1 ref + special styles use FLUX Kontext
+        if len(image_urls) >= 1:
+            # With references: default to Gemini edit
+            # BUT for exactly 1 ref + special flux styles, use FLUX Kontext
             if len(image_urls) == 1 and style_normalized in flux_styles:
                 model_id = "fal-ai/flux-pro/kontext"
             else:
@@ -169,6 +157,34 @@ def generate_with_fal_ai(description, images, style_label):
             else:
                 model_id = "fal-ai/gemini-25-flash-image"
         print(f"🧠 Using model: {model_id} (images attached: {len(image_urls)}, style= '{style_normalized}')")
+
+        # Build payload per model requirements
+        if model_id == "fal-ai/flux-pro/kontext":
+            # Kontext expects a single 'image_url' field, not a list
+            payload = {
+                "prompt": enhanced_prompt,
+                "image_url": image_urls[0] if image_urls else None,
+                "sync_mode": False,
+                "output_format": "jpeg",
+                "safety_tolerance": "4",
+                "enhance_prompt": True,
+                "aspect_ratio": "1:1",
+                "num_images": 1
+            }
+        else:
+            # Gemini endpoints accept an array of reference URLs
+            payload = {
+                "prompt": enhanced_prompt,
+                "image_urls": image_urls,
+                "sync_mode": False,
+                "output_format": "jpeg",
+                "safety_tolerance": "4",
+                "enhance_prompt": True,
+                "aspect_ratio": "1:1",
+                "num_images": 1
+            }
+
+        print(f"🚀 Calling fal.ai with payload: {json.dumps(payload, indent=2)}")
         result_handle = fal_client.submit(model_id, payload)
         print(f"🎯 fal.ai result handle type: {type(result_handle)}")
         print(f"🎯 fal.ai result handle: {result_handle}")

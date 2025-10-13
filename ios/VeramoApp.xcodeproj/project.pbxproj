@@ -28,8 +28,6 @@
 		1A0000000000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000004 /* ContentView.swift */; };
 		1A0000000000000000000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000006 /* Assets.xcassets */; };
 		1A0000000000000000000007 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000008 /* Preview Assets.xcassets */; };
-		AABBCCDD001 /* style-covers in Resources */ = {isa = PBXBuildFile; fileRef = AABBCCDD000 /* style-covers */; };
-		AABBCCDD003 /* couple img styles.csv in Resources */ = {isa = PBXBuildFile; fileRef = AABBCCDD002 /* couple img styles.csv */; };
 		1A0000000000000000000009 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000000A /* MainTabView.swift */; };
 		1A000000000000000000000B /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000000C /* TodayView.swift */; };
 		1A0000000000000000000011 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000012 /* CalendarView.swift */; };
@@ -45,6 +43,8 @@
 		3B0000020000000000000001 /* Branding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0000010000000000000001 /* Branding.swift */; };
 		5D0F8B83E1B044D18CB0F106 /* ImageGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A4FE65ED8F4878B13F8092 /* ImageGenerationService.swift */; };
 		9F9F9F022345678900000002 /* OnboardingFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F9F9F012345678900000001 /* OnboardingFlow.swift */; };
+		AABBCCDD001 /* style-covers in Resources */ = {isa = PBXBuildFile; fileRef = AABBCCDD000 /* style-covers */; };
+		AABBCCDD003 /* couple img styles.csv in Resources */ = {isa = PBXBuildFile; fileRef = AABBCCDD002 /* couple img styles.csv */; };
 		SUBSCRIPTION001 /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUBSCRIPTION000 /* SubscriptionManager.swift */; };
 /* End PBXBuildFile section */
 
@@ -87,8 +87,6 @@
 		1A0000000000000000000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1A0000000000000000000006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1A0000000000000000000008 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		AABBCCDD000 /* style-covers */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "style-covers"; sourceTree = "<group>"; };
-		AABBCCDD002 /* couple img styles.csv */ = {isa = PBXFileReference; lastKnownFileType = text; path = "couple img styles.csv"; sourceTree = "<group>"; };
 		1A000000000000000000000A /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		1A000000000000000000000C /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		1A0000000000000000000012 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
@@ -105,6 +103,8 @@
 		3B0000010000000000000001 /* Branding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Branding.swift; sourceTree = "<group>"; };
 		9F9F9F012345678900000001 /* OnboardingFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlow.swift; sourceTree = "<group>"; };
 		A5A4FE65ED8F4878B13F8092 /* ImageGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGenerationService.swift; sourceTree = "<group>"; };
+		AABBCCDD000 /* style-covers */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "style-covers"; sourceTree = "<group>"; };
+		AABBCCDD002 /* couple img styles.csv */ = {isa = PBXFileReference; lastKnownFileType = text; path = "couple img styles.csv"; sourceTree = "<group>"; };
 		SUBSCRIPTION000 /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -425,7 +425,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = VeramoWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 5TNR5YFY6S;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VeramoWidget/Info.plist;
@@ -466,7 +466,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CODE_SIGN_ENTITLEMENTS = VeramoWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 5TNR5YFY6S;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VeramoWidget/Info.plist;
@@ -608,7 +608,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = VeramoApp/VeramoApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 26;
 				DEVELOPMENT_ASSET_PATHS = "\"VeramoApp/Preview Content\"";
 				DEVELOPMENT_TEAM = 5TNR5YFY6S;
 				ENABLE_PREVIEWS = YES;
@@ -623,7 +623,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.omerdemirtas.veramo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -639,7 +639,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = VeramoApp/VeramoApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 26;
 				DEVELOPMENT_ASSET_PATHS = "\"VeramoApp/Preview Content\"";
 				DEVELOPMENT_TEAM = 5TNR5YFY6S;
 				ENABLE_PREVIEWS = YES;
@@ -654,7 +654,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.omerdemirtas.veramo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

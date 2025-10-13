@@ -1,5 +1,6 @@
 import SwiftUI
 import Adapty
+import WebKit
 
 enum PartnerStatus: String, CaseIterable {
     case yes = "Yes"
@@ -424,68 +425,19 @@ struct OnboardingFlow: View {
 
     private var step6: some View {
         VStack(spacing: 18) {
-            Text("Invite Your Partner with a Promise")
+            Text("Build a Streak for Special Videos")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
-            Text("Share a letter-like image: 'I'm committing to creating beautiful memories for a year & beyond.'")
+            Text("Keep your streak above 30 to unlock free Monthly Dump videos, animations to celebrate your anniversary, birthdays and more!")
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
-                    Button("Generate & Share") {
-                        // Create a square image with commitment text
-                        let size = CGSize(width: 600, height: 600)
-                        let renderer = UIGraphicsImageRenderer(size: size)
-                        
-                        let image = renderer.image { context in
-                            // Background
-                            UIColor.systemBackground.setFill()
-                            context.fill(CGRect(origin: .zero, size: size))
-                            
-                            // Add a simple colored rectangle for testing
-                            UIColor.systemPink.withAlphaComponent(0.3).setFill()
-                            context.fill(CGRect(origin: .zero, size: size))
-                            
-                            // Add text
-                            let text = "I commit to fill our calendar with beautiful memories. Join me on Veramo <3"
-                            let attributes: [NSAttributedString.Key: Any] = [
-                                .font: UIFont.systemFont(ofSize: 24, weight: .semibold),
-                                .foregroundColor: UIColor.label
-                            ]
-                            
-                            let textRect = CGRect(x: 24, y: 24, width: size.width - 48, height: size.height - 100)
-                            text.draw(in: textRect, withAttributes: attributes)
-                            
-                            // Add user name at bottom right
-                            let userNameText = userName
-                            let userNameAttributes: [NSAttributedString.Key: Any] = [
-                                .font: UIFont.systemFont(ofSize: 18, weight: .bold),
-                                .foregroundColor: UIColor.systemPink
-                            ]
-                            
-                            let userNameSize = userNameText.size(withAttributes: userNameAttributes)
-                            let userNameRect = CGRect(
-                                x: size.width - userNameSize.width - 24,
-                                y: size.height - userNameSize.height - 24,
-                                width: userNameSize.width,
-                                height: userNameSize.height
-                            )
-                            
-                            userNameText.draw(in: userNameRect, withAttributes: userNameAttributes)
-                        }
-                        
-                        shareImage = image
-                        showingShareSheet = true
-                    }
-                    .font(.headline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
-                    )
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-            .shadow(color: .pink.opacity(0.3), radius: 8, x: 0, y: 6)
-            .buttonStyle(.plain)
+
+            // Static fallback image
+            Image("couple_celeb")
+                .resizable()
+                .aspectRatio(1, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
         }
     }
 }
@@ -528,5 +480,60 @@ struct StyleButton: View {
         .buttonStyle(.plain)
     }
 }
+
+
+// MARK: - GIFView (loads GIF from data asset)
+struct GIFView: UIViewRepresentable {
+    let dataAssetName: String
+    var objectFit: String = "contain" // "cover" to crop and fill
+    
+    func makeUIView(context: Context) -> WKWebView {
+        let config = WKWebViewConfiguration()
+        config.allowsInlineMediaPlayback = true
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.isScrollEnabled = false
+        return webView
+    }
+    
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        guard let asset = NSDataAsset(name: dataAssetName, bundle: .main) else {
+            // Fallback: try loading a raw file named <dataAssetName>.gif from bundle
+            if let url = Bundle.main.url(forResource: dataAssetName, withExtension: "gif"),
+               let data = try? Data(contentsOf: url) {
+                let base64 = data.base64EncodedString()
+                let html = makeHTML(base64: base64)
+                uiView.loadHTMLString(html, baseURL: nil)
+            }
+            return
+        }
+        let base64 = asset.data.base64EncodedString()
+        let html = makeHTML(base64: base64)
+        uiView.loadHTMLString(html, baseURL: nil)
+    }
+
+    private func makeHTML(base64: String) -> String {
+        """
+        <html>
+        <head>
+          <meta name='viewport' content='initial-scale=1, maximum-scale=1'>
+          <style>
+            html, body { margin:0; padding:0; background: transparent; height:100%; }
+            .wrap { position:fixed; inset:0; }
+            img { width:100%; height:100%; object-fit: \(objectFit); }
+          </style>
+        </head>
+        <body>
+          <div class='wrap'>
+            <img src='data:image/gif;base64,\(base64)' />
+          </div>
+        </body>
+        </html>
+        """
+    }
+}
+
+// AnimatedGIFView removed per user request
 
 

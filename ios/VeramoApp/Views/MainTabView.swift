@@ -113,22 +113,12 @@ struct CreateTabView: View {
                         navigateToEditor = true
                     } label: {
                         ZStack(alignment: .bottomLeading) {
-                            AsyncImage(url: URL(string: "https://picsum.photos/seed/custom/1200/1200")) { phase in
-                                switch phase {
-                                case .empty:
-                                    Color.gray.opacity(0.1)
-                                case .success(let img):
-                                    img
-                                        .resizable()
-                                        .scaledToFill()
-                                case .failure:
-                                    Color.gray.opacity(0.2)
-                                @unknown default:
-                                    Color.gray.opacity(0.2)
-                                }
-                            }
-                            .frame(height: featuredCardHeight)
-                            .clipped()
+                            // Static cover image for From Scratch card
+                            Image("moss_on_rock")
+                                .resizable()
+                                .scaledToFill()
+                                .frame(height: featuredCardHeight)
+                                .clipShape(RoundedRectangle(cornerRadius: 20))
                             .overlay {
                                 // Subtle glass
                                 RoundedRectangle(cornerRadius: 20)
@@ -136,7 +126,7 @@ struct CreateTabView: View {
                                     .opacity(0.15)
                             }
                             .overlay {
-                                // Stronger bottom gradient for title readability
+                                // Stronger bottom gradient for title readability over the GIF
                                 LinearGradient(
                                     colors: [Color.black.opacity(0.65), Color.black.opacity(0.0)],
                                     startPoint: .bottom,
@@ -336,7 +326,7 @@ struct CreateEditorView: View {
                 // Generate button
                 Button {
                     Task {
-                        let hasAccess = await subscriptionManager.presentPaywallIfNeeded()
+                        let hasAccess = await subscriptionManager.presentPaywallIfNeeded(placementId: "in-app-weekly")
                         if hasAccess {
                             generatePlaceholder()
                         }
