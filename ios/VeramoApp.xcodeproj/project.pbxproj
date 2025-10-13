@@ -30,6 +30,7 @@
 		1A0000000000000000000007 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000008 /* Preview Assets.xcassets */; };
 		1A0000000000000000000009 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000000A /* MainTabView.swift */; };
 		1A000000000000000000000B /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000000C /* TodayView.swift */; };
+		1A000000000000000000000D /* StreakProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000000E /* StreakProgressView.swift */; };
 		1A0000000000000000000011 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000012 /* CalendarView.swift */; };
 		1A0000000000000000000013 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000014 /* SettingsView.swift */; };
 		1A0000000000000000000015 /* CropImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000016 /* CropImageView.swift */; };
@@ -89,6 +90,7 @@
 		1A0000000000000000000008 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		1A000000000000000000000A /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		1A000000000000000000000C /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		1A000000000000000000000E /* StreakProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakProgressView.swift; sourceTree = "<group>"; };
 		1A0000000000000000000012 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
 		1A0000000000000000000014 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		1A0000000000000000000016 /* CropImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CropImageView.swift; sourceTree = "<group>"; };
@@ -189,6 +191,7 @@
 				9F9F9F012345678900000001 /* OnboardingFlow.swift */,
 				1A000000000000000000000A /* MainTabView.swift */,
 				1A000000000000000000000C /* TodayView.swift */,
+				1A000000000000000000000E /* StreakProgressView.swift */,
 				1A0000000000000000000012 /* CalendarView.swift */,
 				1A0000000000000000000014 /* SettingsView.swift */,
 				1A0000000000000000000016 /* CropImageView.swift */,
@@ -387,6 +390,7 @@
 				1A0000000000000000000001 /* VeramoApp.swift in Sources */,
 				1A0000000000000000000009 /* MainTabView.swift in Sources */,
 				1A000000000000000000000B /* TodayView.swift in Sources */,
+				1A000000000000000000000D /* StreakProgressView.swift in Sources */,
 				1A0000000000000000000011 /* CalendarView.swift in Sources */,
 				1A0000000000000000000013 /* SettingsView.swift in Sources */,
 				1A0000000000000000000015 /* CropImageView.swift in Sources */,
