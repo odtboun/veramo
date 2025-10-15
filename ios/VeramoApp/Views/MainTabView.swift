@@ -669,19 +669,19 @@ struct StreakProgressView: View {
                     Image(mascotImageName)
                         .resizable()
                         .scaledToFit()
-                        .frame(height: 120)
+                        .frame(height: 240)
                         .padding(.horizontal)
                     
-                    VStack(spacing: 8) {
+                    VStack(spacing: 4) {
                         Text("\(currentStreak)")
-                            .font(.system(size: 44, weight: .bold))
+                            .font(.system(size: 32, weight: .bold))
                             .foregroundColor(.white)
                         Text("Days Streak")
-                            .font(.headline)
+                            .font(.subheadline)
                             .foregroundColor(.white)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 20)
+                    .padding(.vertical, 15)
                     .background(
                         LinearGradient(colors: [Color(red: 0.92, green: 0.85, blue: 0.33), Color(red: 0.81, green: 0.24, blue: 0.08)], startPoint: .topLeading, endPoint: .bottomTrailing)
                     )
@@ -705,8 +705,14 @@ struct StreakProgressView: View {
                                 }
                             } label: {
                                 HStack(alignment: .top, spacing: 12) {
-                                    Image(systemName: m.isUnlocked ? "star.fill" : "lock.fill")
-                                        .foregroundColor(Color(red: 0.90, green: 0.59, blue: 0.17))
+                                    ZStack {
+                                        Circle()
+                                            .fill(m.isUnlocked ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
+                                            .frame(width: 40, height: 40)
+                                        Image(systemName: m.isUnlocked ? "checkmark" : "lock.fill")
+                                            .foregroundColor(m.isUnlocked ? .green : Color(red: 0.90, green: 0.59, blue: 0.17))
+                                            .font(.system(size: 16, weight: .semibold))
+                                    }
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(m.title)
                                             .font(.headline)
@@ -720,10 +726,14 @@ struct StreakProgressView: View {
                                     }
                                     Spacer()
                                 }
-                                .padding(12)
+                                .padding(16)
                                 .background(Color.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
-                                .shadow(color: Color.black.opacity(0.05), radius: 6, x: 0, y: 3)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(m.isUnlocked ? Color.green.opacity(0.3) : Color.gray.opacity(0.2), lineWidth: 1.5)
+                                )
+                                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
                             }
                             .buttonStyle(.plain)
                             .disabled(!m.isUnlocked)
