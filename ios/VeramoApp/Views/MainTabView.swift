@@ -1114,16 +1114,6 @@ struct AudioPlayerView: View {
                 
                 // Audio controls
                 HStack(spacing: 20) {
-                    // Share button
-                    Button(action: {
-                        // TODO: Implement share functionality
-                        print("Share audio")
-                    }) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 30))
-                            .foregroundColor(.secondary)
-                    }
-                    
                     // Download button
                     Button(action: {
                         // TODO: Implement download functionality
@@ -1145,6 +1135,16 @@ struct AudioPlayerView: View {
                         Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
                             .font(.system(size: 50))
                             .foregroundColor(.pink)
+                    }
+                    
+                    // Share button
+                    Button(action: {
+                        // TODO: Implement share functionality
+                        print("Share audio")
+                    }) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 30))
+                            .foregroundColor(.secondary)
                     }
                 }
             }
