@@ -637,15 +637,17 @@ struct StreakProgressView: View {
     @State private var showCouplePodcast: Bool = false
     @State private var showShortVideoWithAudio: Bool = false
     
-    private let milestones: [StreakMilestone] = [
-        StreakMilestone(day: 0, title: "Generate Images in Any Style", description: "Create beautiful AI-generated images with any style you choose", requirementText: "Available Now", isUnlocked: true),
-        StreakMilestone(day: 7, title: "Couple Podcast", description: "An audio podcast discussing your relationship", requirementText: "7+ day streak", isUnlocked: true),
-        StreakMilestone(day: 30, title: "Monthly Summary", description: "AI-generated monthly relationship insights and highlights", requirementText: "30+ day streak", isUnlocked: false),
-        StreakMilestone(day: 60, title: "Short Animation", description: "Personalized animations celebrating your milestones", requirementText: "60+ day streak", isUnlocked: true),
-        StreakMilestone(day: 90, title: "Short Video", description: "A video podcast discussing your relationship", requirementText: "90+ day streak", isUnlocked: false),
-        StreakMilestone(day: 180, title: "Longer Animation", description: "Extended personalized animations celebrating your milestones", requirementText: "180+ day streak", isUnlocked: false),
-        StreakMilestone(day: 365, title: "Longer Video", description: "Extended video podcast discussing your relationship", requirementText: "365+ day streak", isUnlocked: false)
-    ]
+    private var milestones: [StreakMilestone] {
+        [
+            StreakMilestone(day: 0, title: "Generate Images in Any Style", description: "Create beautiful AI-generated images with any style you choose", requirementText: "Available Now", isUnlocked: true),
+            StreakMilestone(day: 7, title: "Couple Podcast", description: "An audio podcast discussing your relationship", requirementText: "7+ day streak", isUnlocked: currentStreak >= 7),
+            StreakMilestone(day: 30, title: "Monthly Summary", description: "AI-generated monthly relationship insights and highlights", requirementText: "30+ day streak", isUnlocked: currentStreak >= 30),
+            StreakMilestone(day: 60, title: "Short Animation", description: "Personalized animations celebrating your milestones", requirementText: "60+ day streak", isUnlocked: currentStreak >= 60),
+            StreakMilestone(day: 90, title: "Short Video", description: "A video podcast discussing your relationship", requirementText: "90+ day streak", isUnlocked: currentStreak >= 90),
+            StreakMilestone(day: 180, title: "Longer Animation", description: "Extended personalized animations celebrating your milestones", requirementText: "180+ day streak", isUnlocked: currentStreak >= 180),
+            StreakMilestone(day: 365, title: "Longer Video", description: "Extended video podcast discussing your relationship", requirementText: "365+ day streak", isUnlocked: currentStreak >= 365)
+        ]
+    }
     
     private var mascotImageName: String {
         if currentStreak < 3 {
@@ -704,8 +706,7 @@ struct StreakProgressView: View {
                                     NotificationCenter.default.post(name: NSNotification.Name("NavigateToCreateTab"), object: nil)
                                 } else if m.title == "Couple Podcast" && m.isUnlocked {
                                     showCouplePodcast = true
-                                } else if m.title == "Short Video" {
-                                    // Leave ungated for testing
+                                } else if m.title == "Short Video" && m.isUnlocked {
                                     showShortVideoWithAudio = true
                                 }
                             } label: {
