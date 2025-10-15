@@ -713,16 +713,21 @@ struct StreakProgressView: View {
                                             .foregroundColor(m.isUnlocked ? .green : Color(red: 0.90, green: 0.59, blue: 0.17))
                                             .font(.system(size: 16, weight: .semibold))
                                     }
-                                    VStack(alignment: .leading, spacing: 4) {
+                                    VStack(alignment: .leading, spacing: 8) {
                                         Text(m.title)
                                             .font(.headline)
                                             .foregroundColor(.primary)
                                         Text(m.description)
                                             .font(.subheadline)
                                             .foregroundColor(.secondary)
-                                        Text(m.requirementText)
-                                            .font(.footnote.weight(.semibold))
-                                            .foregroundColor(Color(red: 0.90, green: 0.59, blue: 0.17))
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "gift.fill")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(Color(red: 0.90, green: 0.59, blue: 0.17))
+                                            Text(m.requirementText)
+                                                .font(.footnote.weight(.semibold))
+                                                .foregroundColor(Color(red: 0.90, green: 0.59, blue: 0.17))
+                                        }
                                     }
                                     Spacer()
                                 }
@@ -731,7 +736,7 @@ struct StreakProgressView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(m.isUnlocked ? Color.green.opacity(0.3) : Color.gray.opacity(0.2), lineWidth: 1.5)
+                                        .stroke(m.isUnlocked ? Color(red: 0.90, green: 0.59, blue: 0.17).opacity(0.3) : Color.gray.opacity(0.2), lineWidth: 1.5)
                                 )
                                 .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
                             }
