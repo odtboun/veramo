@@ -12,11 +12,11 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Install Python deps
-COPY requirements.txt /app/requirements.txt
+COPY backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy service file only (keeps image small)
-COPY video_with_audio_service.py /app/video_with_audio_service.py
+COPY backend/video_with_audio_service.py /app/video_with_audio_service.py
 
 # Expose default port
 ENV PORT=8080

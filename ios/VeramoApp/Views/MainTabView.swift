@@ -635,6 +635,7 @@ struct StreakProgressView: View {
     @State private var currentStreak: Int = 0
     @State private var navigateToAnimation: Bool = false
     @State private var showCouplePodcast: Bool = false
+    @State private var showShortVideoWithAudio: Bool = false
     
     private let milestones: [StreakMilestone] = [
         StreakMilestone(day: 0, title: "Generate Images in Any Style", description: "Create beautiful AI-generated images with any style you choose", requirementText: "Available Now", isUnlocked: true),
@@ -703,6 +704,9 @@ struct StreakProgressView: View {
                                     NotificationCenter.default.post(name: NSNotification.Name("NavigateToCreateTab"), object: nil)
                                 } else if m.title == "Couple Podcast" && m.isUnlocked {
                                     showCouplePodcast = true
+                                } else if m.title == "Short Video" {
+                                    // Leave ungated for testing
+                                    showShortVideoWithAudio = true
                                 }
                             } label: {
                                 HStack(alignment: .top, spacing: 12) {
@@ -744,7 +748,7 @@ struct StreakProgressView: View {
                                 .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
                             }
                             .buttonStyle(.plain)
-                            .disabled(!m.isUnlocked)
+                            .disabled(!(m.isUnlocked || m.title == "Short Video"))
                             .padding(.horizontal)
                         }
                     }
@@ -757,6 +761,9 @@ struct StreakProgressView: View {
             }
             .navigationDestination(isPresented: $showCouplePodcast) {
                 CouplePodcastView()
+            }
+            .navigationDestination(isPresented: $showShortVideoWithAudio) {
+                CreateVideoWithAudioView()
             }
         }
         .preferredColorScheme(.light)
@@ -947,6 +954,224 @@ struct CreateAnimationView: View {
                     self.isGenerating = false
                     self.previewReady = false
                     // Reset player item to ensure new aspect is applied
+                    if foundURL != nil {
+                        self.player.pause()
+                        self.player.replaceCurrentItem(with: nil)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.isGenerating = false
+                    self.previewReady = false
+                }
+            }
+        }
+    }
+
+    private func configurePlayer(_ url: URL) {
+        let asset = AVURLAsset(url: url)
+        asset.loadValuesAsynchronously(forKeys: ["tracks"]) {
+            let aspect = computeAspect(from: asset)
+            let item = AVPlayerItem(asset: asset)
+            DispatchQueue.main.async {
+                self.videoAspect = aspect == 0 ? 1 : aspect
+                self.player.replaceCurrentItem(with: item)
+            }
+        }
+    }
+
+    private func computeAspect(from asset: AVURLAsset) -> CGFloat {
+        guard let track = asset.tracks(withMediaType: .video).first else { return 1 }
+        let transformed = track.naturalSize.applying(track.preferredTransform)
+        let width = abs(transformed.width)
+        let height = abs(transformed.height)
+        guard height > 0 else { return 1 }
+        return width / height
+    }
+}
+
+// MARK: - Create Video With Audio View
+struct CreateVideoWithAudioView: View {
+    @State private var conceptText: String = ""
+    @FocusState private var isFocused: Bool
+    @State private var referenceItems: [PhotosPickerItem] = []
+    @State private var referenceImage: UIImage? = nil
+    @State private var isGenerating: Bool = false
+    @State private var previewReady: Bool = false
+    @State private var videoURL: URL? = nil
+    @State private var player: AVPlayer = AVPlayer()
+    @State private var videoAspect: CGFloat = 1
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                VStack(spacing: 8) {
+                    Text("Create Video")
+                        .font(.largeTitle.bold())
+                    Text("Generate a short video with audio based on a reference image")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Concept Description")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    ZStack(alignment: .topLeading) {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.ultraThinMaterial)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(.gray.opacity(0.2), lineWidth: 1))
+                            .frame(minHeight: 100)
+                        if conceptText.isEmpty {
+                            Text("Describe what you want in the video…")
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                        }
+                        TextField("", text: $conceptText, axis: .vertical)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.clear)
+                            .focused($isFocused)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Text("Reference image (required)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(referenceImage == nil ? "0/1" : "1/1")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    HStack(spacing: 12) {
+                        PhotosPicker(selection: $referenceItems, maxSelectionCount: 1, matching: .images) {
+                            Image(systemName: "plus")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(width: 36, height: 36)
+                                .background(LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        if let img = referenceImage {
+                            ZStack(alignment: .topTrailing) {
+                                Image(uiImage: img)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 84, height: 84)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                Button(action: { referenceImage = nil; referenceItems = [] }) {
+                                    Image(systemName: "xmark.circle.fill").foregroundColor(.white)
+                                }
+                                .padding(4)
+                            }
+                        }
+                    }
+                }
+                .onChange(of: referenceItems) { _, newItems in
+                    guard let item = newItems.first else { referenceImage = nil; return }
+                    Task {
+                        if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
+                            await MainActor.run { referenceImage = img }
+                        }
+                    }
+                }
+
+                Button(action: { generateVideoWithAudio() }) {
+                    HStack {
+                        if isGenerating { ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white)) }
+                        Text(isGenerating ? "Generating…" : "Generate Video").font(.headline.bold())
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing))
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .disabled(referenceImage == nil || conceptText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isGenerating)
+                .opacity((referenceImage == nil || conceptText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isGenerating) ? 0.6 : 1.0)
+
+                if let url = videoURL {
+                    VideoPlayer(player: player)
+                        .frame(maxWidth: .infinity)
+                        .aspectRatio(videoAspect, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .onAppear { configurePlayer(url) }
+                        .onChange(of: videoURL) { _, newURL in
+                            if let newURL { configurePlayer(newURL) }
+                        }
+                } else if previewReady {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial)
+                        VStack(spacing: 12) {
+                            Image(systemName: "film").font(.system(size: 40)).foregroundColor(.pink)
+                            Text("Preparing preview…").font(.headline)
+                        }.padding(24)
+                    }
+                    .aspectRatio(1, contentMode: .fit)
+                }
+
+                Spacer(minLength: 60)
+            }
+            .padding()
+        }
+        .onTapGesture { isFocused = false }
+    }
+
+    private func generateVideoWithAudio() {
+        guard let image = referenceImage else { return }
+        isGenerating = true
+        previewReady = true
+        videoURL = nil
+        Task {
+            do {
+                let boundary = "Boundary-" + UUID().uuidString
+                var request = URLRequest(url: URL(string: "https://veramo-video-with-audio-228424037435.us-east1.run.app/generate-video-with-audio")!)
+                request.httpMethod = "POST"
+                request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+                request.timeoutInterval = 180
+
+                var body = Data()
+                func appendField(name: String, value: String) {
+                    body.append("--\(boundary)\r\n".data(using: .utf8)!)
+                    body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
+                    body.append("\(value)\r\n".data(using: .utf8)!)
+                }
+                func appendFileField(name: String, filename: String, mime: String, data: Data) {
+                    body.append("--\(boundary)\r\n".data(using: .utf8)!)
+                    body.append("Content-Disposition: form-data; name=\"\(name)\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+                    body.append("Content-Type: \(mime)\r\n\r\n".data(using: .utf8)!)
+                    body.append(data)
+                    body.append("\r\n".data(using: .utf8)!)
+                }
+
+                let desc = conceptText.trimmingCharacters(in: .whitespacesAndNewlines)
+                appendField(name: "description", value: desc)
+                appendField(name: "duration", value: "4")
+                let jpegData = image.jpegData(compressionQuality: 0.9) ?? Data()
+                appendFileField(name: "image", filename: "reference.jpg", mime: "image/jpeg", data: jpegData)
+                body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+                request.httpBody = body
+
+                let (data, _) = try await URLSession.shared.data(for: request)
+                let any = try JSONSerialization.jsonObject(with: data, options: [])
+                var foundURL: URL? = nil
+                if let dict = any as? [String: Any] {
+                    if let video = dict["video"] as? [String: Any], let urlString = video["url"] as? String, let url = URL(string: urlString) {
+                        foundURL = url
+                    } else if let urlString = dict["url"] as? String, let url = URL(string: urlString) {
+                        foundURL = url
+                    }
+                }
+                await MainActor.run {
+                    self.videoURL = foundURL
+                    self.isGenerating = false
+                    self.previewReady = false
                     if foundURL != nil {
                         self.player.pause()
                         self.player.replaceCurrentItem(with: nil)

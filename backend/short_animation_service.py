@@ -4,6 +4,7 @@ import os
 import fal_client
 import base64
 import requests
+import tempfile
 
 app = Flask(__name__)
 CORS(app)
@@ -31,12 +32,13 @@ def generate_short_animation():
             if not image_file:
                 return jsonify({"error": "image file is required"}), 400
 
-            # Upload image to a temporary storage to obtain a public URL.
-            # For simplicity, re-upload to Fal file endpoint to get a URL (Fal supports data URIs/files in workflows).
-            # Convert to data URL as fallback.
+            # Upload the image to fal to obtain a hosted URL (recommended by fal)
             image_bytes = image_file.read()
-            data_uri = 'data:' + (image_file.mimetype or 'image/jpeg') + ';base64,' + base64.b64encode(image_bytes).decode('utf-8')
-            image_url = data_uri
+            with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as tmp:
+                tmp.write(image_bytes)
+                tmp.flush()
+                uploaded_url = fal_client.upload_file(tmp.name)
+            image_url = uploaded_url
         else:
             # JSON body: { description: string, image_url: string | data_uri }
             data = request.get_json(silent=True) or {}
@@ -47,13 +49,26 @@ def generate_short_animation():
             if not image_url:
                 return jsonify({"error": "image_url is required"}), 400
 
+            # If a remote URL or data URI is provided, prefer uploading to fal to ensure accessibility
+            # Download if it's a remote URL (http/https), then upload to fal
+            if image_url.startswith('http://') or image_url.startswith('https://'):
+                resp = requests.get(image_url, timeout=30)
+                resp.raise_for_status()
+                with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as tmp:
+                    tmp.write(resp.content)
+                    tmp.flush()
+                    uploaded_url = fal_client.upload_file(tmp.name)
+                image_url = uploaded_url
+
         # Submit to Fal workflow
         result = fal_client.submit(
             "workflows/odtboun/short-couple-video",
             arguments={
-                "concept_description": description,
-                "image_url_field": image_url,
-                "negative_prompt": ""
+                "input": {
+                    "concept_description": description,
+                    "image_url_field": image_url,
+                    "negative_prompt": ""
+                }
             }
         ).get()
 
