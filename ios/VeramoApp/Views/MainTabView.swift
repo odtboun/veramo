@@ -617,3 +617,235 @@ struct CreateEditorView: View {
         }
     }
 }
+
+// MARK: - Streak Views (inlined to ensure build without project file edits)
+
+struct StreakMilestone: Identifiable {
+    let id = UUID()
+    let day: Int
+    let title: String
+    let description: String
+    let requirementText: String
+    let isUnlocked: Bool
+}
+
+struct StreakProgressView: View {
+    @State private var currentStreak: Int = 0
+    @State private var navigateToAnimation: Bool = false
+    
+    private let milestones: [StreakMilestone] = [
+        StreakMilestone(day: 0, title: "Generate Images in Any Style", description: "Create beautiful AI-generated images with any style you choose", requirementText: "Available Now", isUnlocked: true),
+        StreakMilestone(day: 7, title: "Couple Podcast", description: "An audio podcast discussing your relationship", requirementText: "7+ day streak", isUnlocked: true),
+        StreakMilestone(day: 30, title: "Monthly Summary", description: "AI-generated monthly relationship insights and highlights", requirementText: "30+ day streak", isUnlocked: false),
+        StreakMilestone(day: 60, title: "Short Animation", description: "Personalized animations celebrating your milestones", requirementText: "60+ day streak", isUnlocked: true),
+        StreakMilestone(day: 90, title: "Short Video", description: "A video podcast discussing your relationship", requirementText: "90+ day streak", isUnlocked: false),
+        StreakMilestone(day: 180, title: "Longer Animation", description: "Extended personalized animations celebrating your milestones", requirementText: "180+ day streak", isUnlocked: false),
+        StreakMilestone(day: 365, title: "Longer Video", description: "Extended video podcast discussing your relationship", requirementText: "365+ day streak", isUnlocked: false)
+    ]
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    Spacer().frame(height: 20)
+                    
+                    VStack(spacing: 8) {
+                        Text("\(currentStreak)")
+                            .font(.system(size: 44, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("Days Streak")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+                    .background(
+                        LinearGradient(colors: [Color(red: 0.92, green: 0.85, blue: 0.33), Color(red: 0.81, green: 0.24, blue: 0.08)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .padding(.horizontal)
+                    
+                    Text("Increase your streak to unlock special features")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+                    
+                    LazyVStack(spacing: 16) {
+                        ForEach(milestones) { m in
+                            Button {
+                                if m.title == "Short Animation" && m.isUnlocked {
+                                    navigateToAnimation = true
+                                } else if m.title == "Generate Images in Any Style" && m.isUnlocked {
+                                    NotificationCenter.default.post(name: NSNotification.Name("NavigateToCreateTab"), object: nil)
+                                } else if m.title == "Couple Podcast" && m.isUnlocked {
+                                    // No navigation for now (CouplePodcastView is accessible from previous flow)
+                                }
+                            } label: {
+                                HStack(alignment: .top, spacing: 12) {
+                                    Image(systemName: m.isUnlocked ? "star.fill" : "lock.fill")
+                                        .foregroundColor(Color(red: 0.90, green: 0.59, blue: 0.17))
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(m.title)
+                                            .font(.headline)
+                                            .foregroundColor(.primary)
+                                        Text(m.description)
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                        Text(m.requirementText)
+                                            .font(.footnote.weight(.semibold))
+                                            .foregroundColor(Color(red: 0.90, green: 0.59, blue: 0.17))
+                                    }
+                                    Spacer()
+                                }
+                                .padding(12)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .shadow(color: Color.black.opacity(0.05), radius: 6, x: 0, y: 3)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!m.isUnlocked)
+                            .padding(.horizontal)
+                        }
+                    }
+                    .padding(.bottom, 40)
+                }
+            }
+            .background(Color.white)
+            .navigationDestination(isPresented: $navigateToAnimation) {
+                CreateAnimationView()
+            }
+        }
+        .preferredColorScheme(.light)
+    }
+}
+
+struct CreateAnimationView: View {
+    @State private var infoText: String = ""
+    @FocusState private var isFocused: Bool
+    @State private var referenceItem: PhotosPickerItem? = nil
+    @State private var referenceImage: UIImage? = nil
+    @State private var isGenerating: Bool = false
+    @State private var previewReady: Bool = false
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                VStack(spacing: 8) {
+                    Text("Create Animation")
+                        .font(.largeTitle.bold())
+                    Text("Generate a short animation using one reference image")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Information")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    ZStack(alignment: .topLeading) {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.ultraThinMaterial)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(.gray.opacity(0.2), lineWidth: 1))
+                            .frame(minHeight: 100)
+                        if infoText.isEmpty {
+                            Text("Describe what you want animated…")
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                        }
+                        TextField("", text: $infoText, axis: .vertical)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.clear)
+                            .focused($isFocused)
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Text("Reference image (required)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(referenceImage == nil ? "0/1" : "1/1")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    HStack(spacing: 12) {
+                        PhotosPicker(selection: $referenceItem, maxSelectionCount: 1, matching: .images) {
+                            Image(systemName: "plus")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(width: 36, height: 36)
+                                .background(LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        if let img = referenceImage {
+                            ZStack(alignment: .topTrailing) {
+                                Image(uiImage: img)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 84, height: 84)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                Button(action: { referenceImage = nil; referenceItem = nil }) {
+                                    Image(systemName: "xmark.circle.fill").foregroundColor(.white)
+                                }
+                                .padding(4)
+                            }
+                        }
+                    }
+                }
+                .onChange(of: referenceItem) { _, newItem in
+                    guard let item = newItem else { referenceImage = nil; return }
+                    Task {
+                        if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
+                            await MainActor.run { referenceImage = img }
+                        }
+                    }
+                }
+                
+                Button(action: { generatePreview() }) {
+                    HStack {
+                        if isGenerating { ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white)) }
+                        Text(isGenerating ? "Generating…" : "Generate Animation").font(.headline.bold())
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing))
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .disabled(referenceImage == nil || isGenerating)
+                .opacity((referenceImage == nil || isGenerating) ? 0.6 : 1.0)
+                
+                if previewReady {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial)
+                        VStack(spacing: 12) {
+                            Image(systemName: "film").font(.system(size: 40)).foregroundColor(.pink)
+                            Text("Preview ready (placeholder)").font(.headline)
+                        }.padding(24)
+                    }
+                    .aspectRatio(1, contentMode: .fit)
+                }
+                
+                Spacer(minLength: 60)
+            }
+            .padding()
+        }
+        .onTapGesture { isFocused = false }
+    }
+    
+    private func generatePreview() {
+        guard referenceImage != nil else { return }
+        isGenerating = true
+        previewReady = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            isGenerating = false
+            previewReady = true
+        }
+    }
+}
