@@ -705,14 +705,6 @@ struct StreakProgressView: View {
                                 }
                             } label: {
                                 HStack(alignment: .top, spacing: 12) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(m.isUnlocked ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
-                                            .frame(width: 40, height: 40)
-                                        Image(systemName: m.isUnlocked ? "checkmark" : "lock.fill")
-                                            .foregroundColor(m.isUnlocked ? .green : Color(red: 0.90, green: 0.59, blue: 0.17))
-                                            .font(.system(size: 16, weight: .semibold))
-                                    }
                                     VStack(alignment: .leading, spacing: 8) {
                                         Text(m.title)
                                             .font(.headline)
@@ -730,6 +722,16 @@ struct StreakProgressView: View {
                                         }
                                     }
                                     Spacer()
+                                    if m.isUnlocked {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.green)
+                                                .frame(width: 24, height: 24)
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(.white)
+                                                .font(.system(size: 12, weight: .bold))
+                                        }
+                                    }
                                 }
                                 .padding(16)
                                 .background(Color.white)
