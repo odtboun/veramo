@@ -749,7 +749,7 @@ struct StreakProgressView: View {
                                 .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
                             }
                             .buttonStyle(.plain)
-                            .disabled(!(m.isUnlocked || m.title == "Short Video"))
+                            .disabled(!m.isUnlocked)
                             .padding(.horizontal)
                         }
                     }
