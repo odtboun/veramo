@@ -634,14 +634,15 @@ struct StreakMilestone: Identifiable {
 struct StreakProgressView: View {
     @State private var currentStreak: Int = 0
     @State private var navigateToAnimation: Bool = false
+    @State private var selectedAnimationType: String = "Short Animation"
     @State private var showCouplePodcast: Bool = false
     @State private var showShortVideoWithAudio: Bool = false
+    @State private var selectedVideoType: String = "Short Video"
     
     private var milestones: [StreakMilestone] {
         [
             StreakMilestone(day: 0, title: "Generate Images in Any Style", description: "Create beautiful AI-generated images with any style you choose", requirementText: "Available Now", isUnlocked: true),
             StreakMilestone(day: 7, title: "Couple Podcast", description: "An audio podcast discussing your relationship", requirementText: "7+ day streak", isUnlocked: currentStreak >= 7),
-            StreakMilestone(day: 30, title: "Monthly Summary", description: "AI-generated monthly relationship insights and highlights", requirementText: "30+ day streak", isUnlocked: currentStreak >= 30),
             StreakMilestone(day: 60, title: "Short Animation", description: "Personalized animations celebrating your milestones", requirementText: "60+ day streak", isUnlocked: currentStreak >= 60),
             StreakMilestone(day: 90, title: "Short Video", description: "A video podcast discussing your relationship", requirementText: "90+ day streak", isUnlocked: currentStreak >= 90),
             StreakMilestone(day: 180, title: "Longer Animation", description: "Extended personalized animations celebrating your milestones", requirementText: "180+ day streak", isUnlocked: currentStreak >= 180),
@@ -692,7 +693,7 @@ struct StreakProgressView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .padding(.horizontal)
                     
-                    Text("Increase your streak to unlock special features")
+                    Text("Grow your streak to unlock special features")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .padding(.horizontal)
@@ -700,14 +701,16 @@ struct StreakProgressView: View {
                     LazyVStack(spacing: 16) {
                         ForEach(milestones) { m in
                             Button {
-                                if m.title == "Short Animation" && m.isUnlocked {
+                                if (m.title == "Short Animation" || m.title == "Longer Animation") && m.isUnlocked {
+                                    selectedAnimationType = m.title
                                     navigateToAnimation = true
+                                } else if (m.title == "Short Video" || m.title == "Longer Video") && m.isUnlocked {
+                                    selectedVideoType = m.title
+                                    showShortVideoWithAudio = true
                                 } else if m.title == "Generate Images in Any Style" && m.isUnlocked {
                                     NotificationCenter.default.post(name: NSNotification.Name("NavigateToCreateTab"), object: nil)
                                 } else if m.title == "Couple Podcast" && m.isUnlocked {
                                     showCouplePodcast = true
-                                } else if m.title == "Short Video" && m.isUnlocked {
-                                    showShortVideoWithAudio = true
                                 }
                             } label: {
                                 HStack(alignment: .top, spacing: 12) {
@@ -758,13 +761,13 @@ struct StreakProgressView: View {
             }
             .background(Color.white)
             .navigationDestination(isPresented: $navigateToAnimation) {
-                CreateAnimationView()
+                CreateAnimationView(animationType: selectedAnimationType)
             }
             .navigationDestination(isPresented: $showCouplePodcast) {
                 CouplePodcastView()
             }
             .navigationDestination(isPresented: $showShortVideoWithAudio) {
-                CreateVideoWithAudioView()
+                CreateVideoWithAudioView(videoType: selectedVideoType)
             }
         }
         .preferredColorScheme(.light)
@@ -772,6 +775,7 @@ struct StreakProgressView: View {
 }
 
 struct CreateAnimationView: View {
+    let animationType: String
     @State private var infoText: String = ""
     @FocusState private var isFocused: Bool
     @State private var referenceItems: [PhotosPickerItem] = []
@@ -782,13 +786,22 @@ struct CreateAnimationView: View {
     @State private var player: AVPlayer = AVPlayer()
     @State private var videoAspect: CGFloat = 1
     
+    private var isLongerAnimation: Bool {
+        animationType == "Longer Animation"
+    }
+    
+    private var duration: Int {
+        isLongerAnimation ? 10 : 5
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
                 VStack(spacing: 8) {
-                    Text("Create Animation")
+                    Text(isLongerAnimation ? "Create Animation" : "Create Short Animation")
                         .font(.largeTitle.bold())
-                    Text("Generate a short animation using one reference image")
+                        .multilineTextAlignment(.center)
+                    Text(isLongerAnimation ? "Generate a longer animation using one reference image" : "Generate a short animation using one reference image")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -864,7 +877,7 @@ struct CreateAnimationView: View {
                 Button(action: { generateAnimation() }) {
                     HStack {
                         if isGenerating { ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white)) }
-                        Text(isGenerating ? "Generating…" : "Generate Animation").font(.headline.bold())
+                        Text(isGenerating ? "Generating…" : (isLongerAnimation ? "Generate Animation" : "Generate Short Animation")).font(.headline.bold())
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
@@ -934,6 +947,7 @@ struct CreateAnimationView: View {
                 }
 
                 appendField(name: "description", value: infoText)
+                appendField(name: "duration", value: "\(duration)")
                 let jpegData = image.jpegData(compressionQuality: 0.9) ?? Data()
                 appendFileField(name: "image", filename: "reference.jpg", mime: "image/jpeg", data: jpegData)
                 body.append("--\(boundary)--\r\n".data(using: .utf8)!)
@@ -991,8 +1005,10 @@ struct CreateAnimationView: View {
     }
 }
 
+
 // MARK: - Create Video With Audio View
 struct CreateVideoWithAudioView: View {
+    let videoType: String
     @State private var conceptText: String = ""
     @FocusState private var isFocused: Bool
     @State private var referenceItems: [PhotosPickerItem] = []
@@ -1002,14 +1018,22 @@ struct CreateVideoWithAudioView: View {
     @State private var videoURL: URL? = nil
     @State private var player: AVPlayer = AVPlayer()
     @State private var videoAspect: CGFloat = 1
+    
+    private var isLongerVideo: Bool {
+        videoType == "Longer Video"
+    }
+    
+    private var duration: Int {
+        isLongerVideo ? 8 : 4
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
                 VStack(spacing: 8) {
-                    Text("Create Video")
+                    Text(isLongerVideo ? "Create Video" : "Create Video")
                         .font(.largeTitle.bold())
-                    Text("Generate a short video with audio based on a reference image")
+                    Text(isLongerVideo ? "Generate a longer video with audio based on a reference image" : "Generate a short video with audio based on a reference image")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -1153,7 +1177,7 @@ struct CreateVideoWithAudioView: View {
 
                 let desc = conceptText.trimmingCharacters(in: .whitespacesAndNewlines)
                 appendField(name: "description", value: desc)
-                appendField(name: "duration", value: "4")
+                appendField(name: "duration", value: "\(duration)")
                 let jpegData = image.jpegData(compressionQuality: 0.9) ?? Data()
                 appendFileField(name: "image", filename: "reference.jpg", mime: "image/jpeg", data: jpegData)
                 body.append("--\(boundary)--\r\n".data(using: .utf8)!)
