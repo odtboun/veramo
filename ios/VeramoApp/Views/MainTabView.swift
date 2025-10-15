@@ -722,7 +722,7 @@ struct StreakProgressView: View {
 struct CreateAnimationView: View {
     @State private var infoText: String = ""
     @FocusState private var isFocused: Bool
-    @State private var referenceItem: PhotosPickerItem? = nil
+    @State private var referenceItems: [PhotosPickerItem] = []
     @State private var referenceImage: UIImage? = nil
     @State private var isGenerating: Bool = false
     @State private var previewReady: Bool = false
@@ -774,7 +774,7 @@ struct CreateAnimationView: View {
                             .foregroundColor(.secondary)
                     }
                     HStack(spacing: 12) {
-                        PhotosPicker(selection: $referenceItem, maxSelectionCount: 1, matching: .images) {
+                        PhotosPicker(selection: $referenceItems, maxSelectionCount: 1, matching: .images) {
                             Image(systemName: "plus")
                                 .font(.headline)
                                 .foregroundColor(.white)
@@ -789,7 +789,7 @@ struct CreateAnimationView: View {
                                     .scaledToFill()
                                     .frame(width: 84, height: 84)
                                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                                Button(action: { referenceImage = nil; referenceItem = nil }) {
+                                Button(action: { referenceImage = nil; referenceItems = [] }) {
                                     Image(systemName: "xmark.circle.fill").foregroundColor(.white)
                                 }
                                 .padding(4)
@@ -797,8 +797,8 @@ struct CreateAnimationView: View {
                         }
                     }
                 }
-                .onChange(of: referenceItem) { _, newItem in
-                    guard let item = newItem else { referenceImage = nil; return }
+                .onChange(of: referenceItems) { _, newItems in
+                    guard let item = newItems.first else { referenceImage = nil; return }
                     Task {
                         if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
                             await MainActor.run { referenceImage = img }
