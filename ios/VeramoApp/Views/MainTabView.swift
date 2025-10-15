@@ -69,6 +69,7 @@ struct MainTabView: View {
 import PhotosUI
 import Supabase
 import AVFoundation
+import AVKit
 
 struct CreateTabView: View {
     @ObservedObject var subscriptionManager: SubscriptionManager
@@ -769,6 +770,9 @@ struct CreateAnimationView: View {
     @State private var referenceImage: UIImage? = nil
     @State private var isGenerating: Bool = false
     @State private var previewReady: Bool = false
+    @State private var videoURL: URL? = nil
+    @State private var player: AVPlayer = AVPlayer()
+    @State private var videoAspect: CGFloat = 1
     
     var body: some View {
         ScrollView {
@@ -849,7 +853,7 @@ struct CreateAnimationView: View {
                     }
                 }
                 
-                Button(action: { generatePreview() }) {
+                Button(action: { generateAnimation() }) {
                     HStack {
                         if isGenerating { ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white)) }
                         Text(isGenerating ? "Generating…" : "Generate Animation").font(.headline.bold())
@@ -864,12 +868,23 @@ struct CreateAnimationView: View {
                 .disabled(referenceImage == nil || isGenerating)
                 .opacity((referenceImage == nil || isGenerating) ? 0.6 : 1.0)
                 
-                if previewReady {
+                if let url = videoURL {
+                    VideoPlayer(player: player)
+                        .frame(maxWidth: .infinity)
+                        .aspectRatio(videoAspect, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .onAppear { configurePlayer(url) }
+                        .onChange(of: videoURL) { _, newURL in
+                            if let newURL {
+                                configurePlayer(newURL)
+                            }
+                        }
+                } else if previewReady {
                     ZStack {
                         RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial)
                         VStack(spacing: 12) {
                             Image(systemName: "film").font(.system(size: 40)).foregroundColor(.pink)
-                            Text("Preview ready (placeholder)").font(.headline)
+                            Text("Preparing preview…").font(.headline)
                         }.padding(24)
                     }
                     .aspectRatio(1, contentMode: .fit)
@@ -882,14 +897,89 @@ struct CreateAnimationView: View {
         .onTapGesture { isFocused = false }
     }
     
-    private func generatePreview() {
-        guard referenceImage != nil else { return }
+    private func generateAnimation() {
+        guard let image = referenceImage else { return }
         isGenerating = true
-        previewReady = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            isGenerating = false
-            previewReady = true
+        previewReady = true
+        videoURL = nil
+        Task {
+            do {
+                // Prepare multipart form-data
+                let boundary = "Boundary-" + UUID().uuidString
+                var request = URLRequest(url: URL(string: "https://veramo-short-animation-228424037435.us-east1.run.app/generate-short-animation")!)
+                request.httpMethod = "POST"
+                request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+                request.timeoutInterval = 150 // Allow enough time for Fal animation generation
+
+                var body = Data()
+                func appendField(name: String, value: String) {
+                    body.append("--\(boundary)\r\n".data(using: .utf8)!)
+                    body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
+                    body.append("\(value)\r\n".data(using: .utf8)!)
+                }
+                func appendFileField(name: String, filename: String, mime: String, data: Data) {
+                    body.append("--\(boundary)\r\n".data(using: .utf8)!)
+                    body.append("Content-Disposition: form-data; name=\"\(name)\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+                    body.append("Content-Type: \(mime)\r\n\r\n".data(using: .utf8)!)
+                    body.append(data)
+                    body.append("\r\n".data(using: .utf8)!)
+                }
+
+                appendField(name: "description", value: infoText)
+                let jpegData = image.jpegData(compressionQuality: 0.9) ?? Data()
+                appendFileField(name: "image", filename: "reference.jpg", mime: "image/jpeg", data: jpegData)
+                body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+                request.httpBody = body
+
+                let (data, _) = try await URLSession.shared.data(for: request)
+                // Be robust to stray content-types; just try JSON
+                let any = try JSONSerialization.jsonObject(with: data, options: [])
+                var foundURL: URL? = nil
+                if let dict = any as? [String: Any] {
+                    if let video = dict["video"] as? [String: Any], let urlString = video["url"] as? String, let url = URL(string: urlString) {
+                        foundURL = url
+                    } else if let urlString = dict["url"] as? String, let url = URL(string: urlString) {
+                        foundURL = url
+                    }
+                }
+                await MainActor.run {
+                    self.videoURL = foundURL
+                    self.isGenerating = false
+                    self.previewReady = false
+                    // Reset player item to ensure new aspect is applied
+                    if foundURL != nil {
+                        self.player.pause()
+                        self.player.replaceCurrentItem(with: nil)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.isGenerating = false
+                    self.previewReady = false
+                }
+            }
         }
+    }
+
+    private func configurePlayer(_ url: URL) {
+        let asset = AVURLAsset(url: url)
+        asset.loadValuesAsynchronously(forKeys: ["tracks"]) {
+            let aspect = computeAspect(from: asset)
+            let item = AVPlayerItem(asset: asset)
+            DispatchQueue.main.async {
+                self.videoAspect = aspect == 0 ? 1 : aspect
+                self.player.replaceCurrentItem(with: item)
+            }
+        }
+    }
+
+    private func computeAspect(from asset: AVURLAsset) -> CGFloat {
+        guard let track = asset.tracks(withMediaType: .video).first else { return 1 }
+        let transformed = track.naturalSize.applying(track.preferredTransform)
+        let width = abs(transformed.width)
+        let height = abs(transformed.height)
+        guard height > 0 else { return 1 }
+        return width / height
     }
 }
 
