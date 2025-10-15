@@ -34,11 +34,11 @@ struct MainTabView: View {
                 }
                 .tag(2)
             
-            // Settings
-            SettingsView(authVM: authVM)
+            // Streak Progress
+            StreakProgressView()
                 .tabItem {
-                    Image(systemName: "gearshape.fill")
-                    Text("Settings")
+                    Image(systemName: "flame.fill")
+                    Text("Streak")
                 }
                 .tag(3)
         }
@@ -68,6 +68,7 @@ struct MainTabView: View {
 
 import PhotosUI
 import Supabase
+import AVFoundation
 
 struct CreateTabView: View {
     @ObservedObject var subscriptionManager: SubscriptionManager
@@ -615,5 +616,613 @@ struct CreateEditorView: View {
         } catch {
             print("❌ addResultToCalendar error: \(error)")
         }
+    }
+}
+
+// MARK: - Streak Views (inlined to ensure build without project file edits)
+
+struct StreakMilestone: Identifiable {
+    let id = UUID()
+    let day: Int
+    let title: String
+    let description: String
+    let requirementText: String
+    let isUnlocked: Bool
+}
+
+struct StreakProgressView: View {
+    @State private var currentStreak: Int = 0
+    @State private var navigateToAnimation: Bool = false
+    @State private var showCouplePodcast: Bool = false
+    
+    private let milestones: [StreakMilestone] = [
+        StreakMilestone(day: 0, title: "Generate Images in Any Style", description: "Create beautiful AI-generated images with any style you choose", requirementText: "Available Now", isUnlocked: true),
+        StreakMilestone(day: 7, title: "Couple Podcast", description: "An audio podcast discussing your relationship", requirementText: "7+ day streak", isUnlocked: true),
+        StreakMilestone(day: 30, title: "Monthly Summary", description: "AI-generated monthly relationship insights and highlights", requirementText: "30+ day streak", isUnlocked: false),
+        StreakMilestone(day: 60, title: "Short Animation", description: "Personalized animations celebrating your milestones", requirementText: "60+ day streak", isUnlocked: true),
+        StreakMilestone(day: 90, title: "Short Video", description: "A video podcast discussing your relationship", requirementText: "90+ day streak", isUnlocked: false),
+        StreakMilestone(day: 180, title: "Longer Animation", description: "Extended personalized animations celebrating your milestones", requirementText: "180+ day streak", isUnlocked: false),
+        StreakMilestone(day: 365, title: "Longer Video", description: "Extended video podcast discussing your relationship", requirementText: "365+ day streak", isUnlocked: false)
+    ]
+    
+    private var mascotImageName: String {
+        if currentStreak < 3 {
+            return "lessthan_3day"
+        } else if currentStreak < 7 {
+            return "lessthan_7day"
+        } else if currentStreak < 14 {
+            return "lessthan_14day"
+        } else if currentStreak < 30 {
+            return "lessthan_30day"
+        } else {
+            return "morethan_30day"
+        }
+    }
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    Spacer().frame(height: 20)
+                    
+                    // Mascot image based on streak
+                    Image(mascotImageName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 240)
+                        .padding(.horizontal)
+                    
+                    VStack(spacing: 4) {
+                        Text("\(currentStreak)")
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("Days Streak")
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 15)
+                    .background(
+                        LinearGradient(colors: [Color(red: 0.92, green: 0.85, blue: 0.33), Color(red: 0.81, green: 0.24, blue: 0.08)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .padding(.horizontal)
+                    
+                    Text("Increase your streak to unlock special features")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+                    
+                    LazyVStack(spacing: 16) {
+                        ForEach(milestones) { m in
+                            Button {
+                                if m.title == "Short Animation" && m.isUnlocked {
+                                    navigateToAnimation = true
+                                } else if m.title == "Generate Images in Any Style" && m.isUnlocked {
+                                    NotificationCenter.default.post(name: NSNotification.Name("NavigateToCreateTab"), object: nil)
+                                } else if m.title == "Couple Podcast" && m.isUnlocked {
+                                    showCouplePodcast = true
+                                }
+                            } label: {
+                                HStack(alignment: .top, spacing: 12) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(m.title)
+                                            .font(.headline)
+                                            .foregroundColor(.primary)
+                                        Text(m.description)
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "gift.fill")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(Color(red: 0.90, green: 0.59, blue: 0.17))
+                                            Text(m.requirementText)
+                                                .font(.footnote.weight(.semibold))
+                                                .foregroundColor(Color(red: 0.90, green: 0.59, blue: 0.17))
+                                        }
+                                    }
+                                    Spacer()
+                                    if m.isUnlocked {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.green)
+                                                .frame(width: 20, height: 20)
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(.white)
+                                                .font(.system(size: 10, weight: .bold))
+                                        }
+                                    }
+                                }
+                                .padding(16)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(m.isUnlocked ? Color(red: 0.90, green: 0.59, blue: 0.17).opacity(0.3) : Color.gray.opacity(0.2), lineWidth: 1.5)
+                                )
+                                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!m.isUnlocked)
+                            .padding(.horizontal)
+                        }
+                    }
+                    .padding(.bottom, 40)
+                }
+            }
+            .background(Color.white)
+            .navigationDestination(isPresented: $navigateToAnimation) {
+                CreateAnimationView()
+            }
+            .navigationDestination(isPresented: $showCouplePodcast) {
+                CouplePodcastView()
+            }
+        }
+        .preferredColorScheme(.light)
+    }
+}
+
+struct CreateAnimationView: View {
+    @State private var infoText: String = ""
+    @FocusState private var isFocused: Bool
+    @State private var referenceItems: [PhotosPickerItem] = []
+    @State private var referenceImage: UIImage? = nil
+    @State private var isGenerating: Bool = false
+    @State private var previewReady: Bool = false
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                VStack(spacing: 8) {
+                    Text("Create Animation")
+                        .font(.largeTitle.bold())
+                    Text("Generate a short animation using one reference image")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Information")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    ZStack(alignment: .topLeading) {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.ultraThinMaterial)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(.gray.opacity(0.2), lineWidth: 1))
+                            .frame(minHeight: 100)
+                        if infoText.isEmpty {
+                            Text("Describe what you want animated…")
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                        }
+                        TextField("", text: $infoText, axis: .vertical)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.clear)
+                            .focused($isFocused)
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Text("Reference image (required)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(referenceImage == nil ? "0/1" : "1/1")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    HStack(spacing: 12) {
+                        PhotosPicker(selection: $referenceItems, maxSelectionCount: 1, matching: .images) {
+                            Image(systemName: "plus")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(width: 36, height: 36)
+                                .background(LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        if let img = referenceImage {
+                            ZStack(alignment: .topTrailing) {
+                                Image(uiImage: img)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 84, height: 84)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                Button(action: { referenceImage = nil; referenceItems = [] }) {
+                                    Image(systemName: "xmark.circle.fill").foregroundColor(.white)
+                                }
+                                .padding(4)
+                            }
+                        }
+                    }
+                }
+                .onChange(of: referenceItems) { _, newItems in
+                    guard let item = newItems.first else { referenceImage = nil; return }
+                    Task {
+                        if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
+                            await MainActor.run { referenceImage = img }
+                        }
+                    }
+                }
+                
+                Button(action: { generatePreview() }) {
+                    HStack {
+                        if isGenerating { ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white)) }
+                        Text(isGenerating ? "Generating…" : "Generate Animation").font(.headline.bold())
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing))
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .disabled(referenceImage == nil || isGenerating)
+                .opacity((referenceImage == nil || isGenerating) ? 0.6 : 1.0)
+                
+                if previewReady {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial)
+                        VStack(spacing: 12) {
+                            Image(systemName: "film").font(.system(size: 40)).foregroundColor(.pink)
+                            Text("Preview ready (placeholder)").font(.headline)
+                        }.padding(24)
+                    }
+                    .aspectRatio(1, contentMode: .fit)
+                }
+                
+                Spacer(minLength: 60)
+            }
+            .padding()
+        }
+        .onTapGesture { isFocused = false }
+    }
+    
+    private func generatePreview() {
+        guard referenceImage != nil else { return }
+        isGenerating = true
+        previewReady = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            isGenerating = false
+            previewReady = true
+        }
+    }
+}
+
+// MARK: - Inlined CouplePodcastView
+struct CouplePodcastView: View {
+    @State private var informationText: String = ""
+    @State private var isGenerating: Bool = false
+    @State private var resultAudioURL: URL? = nil
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var isPlaying: Bool = false
+    @State private var currentTime: TimeInterval = 0
+    @State private var duration: TimeInterval = 0
+    @State private var timer: Timer?
+    @FocusState private var isTextFieldFocused: Bool
+    
+    var body: some View {
+        ScrollView {
+                VStack(spacing: 24) {
+                    // Header
+                    VStack(spacing: 8) {
+                        Text("Couple Podcast")
+                            .font(.largeTitle.bold())
+                            .foregroundColor(.primary)
+                        
+                        Text("Generate personalized audio conversations about your relationship")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.top)
+                    
+                    // Information input
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Information")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        ZStack(alignment: .topLeading) {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.ultraThinMaterial)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(.gray.opacity(0.2), lineWidth: 1)
+                                )
+                                .frame(minHeight: 100)
+                            
+                            if informationText.isEmpty {
+                                Text("Share details about your relationship, recent experiences, or topics you'd like to discuss...")
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                            }
+                            
+                            TextField("", text: $informationText, axis: .vertical)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color.clear)
+                                .focused($isTextFieldFocused)
+                        }
+                    }
+                    
+                    // Generate button
+                    Button(action: {
+                        generatePodcast()
+                    }) {
+                        HStack {
+                            if isGenerating {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "waveform")
+                                    .font(.title2)
+                            }
+                            
+                            Text(isGenerating ? "Generating Podcast..." : "Generate Podcast")
+                                .font(.headline.bold())
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            LinearGradient(
+                                colors: [.pink, .purple],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(16)
+                    }
+                    .disabled(isGenerating || informationText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .opacity((isGenerating || informationText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
+                    
+                    // Audio player (shown when audio is generated)
+                    if let audioURL = resultAudioURL {
+                        AudioPlayerView(
+                            audioURL: audioURL,
+                            audioPlayer: $audioPlayer,
+                            isPlaying: $isPlaying,
+                            currentTime: $currentTime,
+                            duration: $duration,
+                            timer: $timer
+                        )
+                    }
+                    
+                    Spacer(minLength: 100) // Bottom padding
+                }
+                .padding()
+            }
+            .onTapGesture {
+                isTextFieldFocused = false
+            }
+    }
+    
+    private func generatePodcast() {
+        isGenerating = true
+        isTextFieldFocused = false
+
+        struct AudioInfo: Decodable { let url: String? }
+        struct PodcastResponse: Decodable { let audio: AudioInfo?; let duration: Double?; let error: String? }
+
+        guard let requestURL = URL(string: "https://veramo-podcast-228424037435.us-east1.run.app/generate-podcast") else {
+            isGenerating = false
+            return
+        }
+
+        var request = URLRequest(url: requestURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: String] = ["prompt": informationText]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                defer { self.isGenerating = false }
+
+                guard error == nil, let data = data else { return }
+                let decoder = JSONDecoder()
+                guard let parsed = try? decoder.decode(PodcastResponse.self, from: data),
+                      let audioURLString = parsed.audio?.url,
+                      let remoteURL = URL(string: audioURLString) else {
+                    return
+                }
+
+                // Download the MP3 and prepare player
+                URLSession.shared.downloadTask(with: remoteURL) { tempURL, _, _ in
+                    guard let tempURL = tempURL else { return }
+                    let destination = FileManager.default.temporaryDirectory.appendingPathComponent("couple_podcast.mp3")
+                    // Replace existing
+                    try? FileManager.default.removeItem(at: destination)
+                    do {
+                        try FileManager.default.moveItem(at: tempURL, to: destination)
+                        DispatchQueue.main.async {
+                            self.resultAudioURL = destination
+                            do {
+                                self.audioPlayer = try AVAudioPlayer(contentsOf: destination)
+                                self.audioPlayer?.prepareToPlay()
+                                self.duration = self.audioPlayer?.duration ?? (parsed.duration ?? 0)
+                                self.currentTime = 0
+                                self.isPlaying = false
+                            } catch {
+                                // ignore
+                            }
+                        }
+                    } catch {
+                        // ignore
+                    }
+                }.resume()
+            }
+        }.resume()
+    }
+    
+}
+
+struct AudioPlayerView: View {
+    let audioURL: URL
+    @Binding var audioPlayer: AVAudioPlayer?
+    @Binding var isPlaying: Bool
+    @Binding var currentTime: TimeInterval
+    @Binding var duration: TimeInterval
+    @Binding var timer: Timer?
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Header
+            HStack {
+                Image(systemName: "waveform.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(.pink)
+                
+                Text("Your Couple Podcast")
+                    .font(.headline.bold())
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            
+            // Audio player controls
+            VStack(spacing: 12) {
+                // Progress bar
+                VStack(spacing: 8) {
+                    Slider(value: $currentTime, in: 0...duration, onEditingChanged: { editing in
+                        if !editing {
+                            audioPlayer?.currentTime = currentTime
+                        }
+                    })
+                    .accentColor(.pink)
+                    
+                    HStack {
+                        Text(formatTime(currentTime))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Text(formatTime(duration))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                // Audio controls
+                HStack(spacing: 20) {
+                    // Download button
+                    Button(action: {
+                        // TODO: Implement download functionality
+                        print("Download audio")
+                    }) {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Play/Pause button
+                    Button(action: {
+                        if isPlaying {
+                            pauseAudio()
+                        } else {
+                            playAudio()
+                        }
+                    }) {
+                        Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.system(size: 50))
+                            .foregroundColor(.pink)
+                    }
+                    
+                    // Share button
+                    Button(action: {
+                        // TODO: Implement share functionality
+                        print("Share audio")
+                    }) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 30))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .padding()
+        }
+        .onAppear {
+            setupAudioPlayer()
+        }
+        .onDisappear {
+            stopAudio()
+        }
+    }
+    
+    private func setupAudioPlayer() {
+        // Ensure we have a prepared AVAudioPlayer for the provided URL
+        if audioPlayer == nil {
+            do {
+                // Configure audio session for playback
+                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
+                try AVAudioSession.sharedInstance().setActive(true)
+                audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
+                audioPlayer?.prepareToPlay()
+            } catch {
+                // Failed to initialize player – keep graceful UI
+            }
+        }
+        duration = audioPlayer?.duration ?? duration
+        currentTime = audioPlayer?.currentTime ?? 0
+    }
+    
+    private func playAudio() {
+        guard let player = audioPlayer else { return }
+        if currentTime > 0, abs(player.currentTime - currentTime) > 0.05 {
+            player.currentTime = currentTime
+        }
+        player.play()
+        isPlaying = true
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            guard let p = audioPlayer else { return }
+            currentTime = p.currentTime
+            duration = p.duration
+            if !p.isPlaying && currentTime >= duration - 0.05 {
+                stopAudio()
+            }
+        }
+    }
+    
+    private func pauseAudio() {
+        audioPlayer?.pause()
+        isPlaying = false
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    private func stopAudio() {
+        audioPlayer?.stop()
+        isPlaying = false
+        currentTime = 0
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    private func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+class AudioPlayerDelegate: NSObject, AVAudioPlayerDelegate {
+    private let onFinish: () -> Void
+    
+    init(onFinish: @escaping () -> Void) {
+        self.onFinish = onFinish
+    }
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        onFinish()
     }
 }
