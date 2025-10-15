@@ -34,11 +34,11 @@ struct MainTabView: View {
                 }
                 .tag(2)
             
-            // Settings
-            SettingsView(authVM: authVM)
+            // Streak Progress
+            StreakProgressView()
                 .tabItem {
-                    Image(systemName: "gearshape.fill")
-                    Text("Settings")
+                    Image(systemName: "flame.fill")
+                    Text("Streak")
                 }
                 .tag(3)
         }
