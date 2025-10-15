@@ -726,10 +726,10 @@ struct StreakProgressView: View {
                                         ZStack {
                                             Circle()
                                                 .fill(Color.green)
-                                                .frame(width: 24, height: 24)
+                                                .frame(width: 20, height: 20)
                                             Image(systemName: "checkmark")
                                                 .foregroundColor(.white)
-                                                .font(.system(size: 12, weight: .bold))
+                                                .font(.system(size: 10, weight: .bold))
                                         }
                                     }
                                 }
@@ -896,259 +896,321 @@ struct CreateAnimationView: View {
 // MARK: - Inlined CouplePodcastView
 struct CouplePodcastView: View {
     @State private var informationText: String = ""
-    @FocusState private var isFocused: Bool
     @State private var isGenerating: Bool = false
     @State private var resultAudioURL: URL? = nil
-    @State private var audioPlayer: AVAudioPlayer? = nil
-    @State private var audioPlayerDelegate: AudioPlayerDelegate? = nil
+    @State private var audioPlayer: AVAudioPlayer?
     @State private var isPlaying: Bool = false
-    @State private var currentTime: Double = 0
-    @State private var duration: Double = 0
-    @State private var playbackTimer: Timer? = nil
+    @State private var currentTime: TimeInterval = 0
+    @State private var duration: TimeInterval = 0
+    @State private var timer: Timer?
+    @FocusState private var isTextFieldFocused: Bool
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                VStack(spacing: 8) {
-                    Text("Couple Podcast")
-                        .font(.largeTitle.bold())
-                    Text("Generate an audio podcast discussing your relationship")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.top)
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Information")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    ZStack(alignment: .topLeading) {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.ultraThinMaterial)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(.gray.opacity(0.2), lineWidth: 1))
-                            .frame(minHeight: 100)
-                        if informationText.isEmpty {
-                            Text("Tell us about your relationship, special moments, or what you'd like discussed…")
-                                .foregroundColor(.secondary)
+                VStack(spacing: 24) {
+                    // Header
+                    VStack(spacing: 8) {
+                        Text("Couple Podcast")
+                            .font(.largeTitle.bold())
+                            .foregroundColor(.primary)
+                        
+                        Text("Generate personalized audio conversations about your relationship")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.top)
+                    
+                    // Information input
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Information")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        ZStack(alignment: .topLeading) {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.ultraThinMaterial)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(.gray.opacity(0.2), lineWidth: 1)
+                                )
+                                .frame(minHeight: 100)
+                            
+                            if informationText.isEmpty {
+                                Text("Share details about your relationship, recent experiences, or topics you'd like to discuss...")
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                            }
+                            
+                            TextField("", text: $informationText, axis: .vertical)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
+                                .background(Color.clear)
+                                .focused($isTextFieldFocused)
                         }
-                        TextField("", text: $informationText, axis: .vertical)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.clear)
-                            .focused($isFocused)
                     }
+                    
+                    // Generate button
+                    Button(action: {
+                        generatePodcast()
+                    }) {
+                        HStack {
+                            if isGenerating {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "waveform")
+                                    .font(.title2)
+                            }
+                            
+                            Text(isGenerating ? "Generating Podcast..." : "Generate Podcast")
+                                .font(.headline.bold())
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            LinearGradient(
+                                colors: [.pink, .purple],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(16)
+                    }
+                    .disabled(isGenerating || informationText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .opacity((isGenerating || informationText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
+                    
+                    // Audio player (shown when audio is generated)
+                    if let audioURL = resultAudioURL {
+                        AudioPlayerView(
+                            audioURL: audioURL,
+                            audioPlayer: $audioPlayer,
+                            isPlaying: $isPlaying,
+                            currentTime: $currentTime,
+                            duration: $duration,
+                            timer: $timer
+                        )
+                    }
+                    
+                    Spacer(minLength: 100) // Bottom padding
                 }
+                .padding()
+            }
+            .onTapGesture {
+                isTextFieldFocused = false
+            }
+    }
+    
+    private func generatePodcast() {
+        isGenerating = true
+        isTextFieldFocused = false
+
+        struct AudioInfo: Decodable { let url: String? }
+        struct PodcastResponse: Decodable { let audio: AudioInfo?; let duration: Double?; let error: String? }
+
+        guard let requestURL = URL(string: "https://veramo-podcast-228424037435.us-east1.run.app/generate-podcast") else {
+            isGenerating = false
+            return
+        }
+
+        var request = URLRequest(url: requestURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: String] = ["prompt": informationText]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                defer { self.isGenerating = false }
+
+                guard error == nil, let data = data else { return }
+                let decoder = JSONDecoder()
+                guard let parsed = try? decoder.decode(PodcastResponse.self, from: data),
+                      let audioURLString = parsed.audio?.url,
+                      let remoteURL = URL(string: audioURLString) else {
+                    return
+                }
+
+                // Download the MP3 and prepare player
+                URLSession.shared.downloadTask(with: remoteURL) { tempURL, _, _ in
+                    guard let tempURL = tempURL else { return }
+                    let destination = FileManager.default.temporaryDirectory.appendingPathComponent("couple_podcast.mp3")
+                    // Replace existing
+                    try? FileManager.default.removeItem(at: destination)
+                    do {
+                        try FileManager.default.moveItem(at: tempURL, to: destination)
+                        DispatchQueue.main.async {
+                            self.resultAudioURL = destination
+                            do {
+                                self.audioPlayer = try AVAudioPlayer(contentsOf: destination)
+                                self.audioPlayer?.prepareToPlay()
+                                self.duration = self.audioPlayer?.duration ?? (parsed.duration ?? 0)
+                                self.currentTime = 0
+                                self.isPlaying = false
+                            } catch {
+                                // ignore
+                            }
+                        }
+                    } catch {
+                        // ignore
+                    }
+                }.resume()
+            }
+        }.resume()
+    }
+    
+}
+
+struct AudioPlayerView: View {
+    let audioURL: URL
+    @Binding var audioPlayer: AVAudioPlayer?
+    @Binding var isPlaying: Bool
+    @Binding var currentTime: TimeInterval
+    @Binding var duration: TimeInterval
+    @Binding var timer: Timer?
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Header
+            HStack {
+                Image(systemName: "waveform.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(.pink)
                 
-                Button(action: { generatePodcast() }) {
+                Text("Your Couple Podcast")
+                    .font(.headline.bold())
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            
+            // Audio player controls
+            VStack(spacing: 12) {
+                // Progress bar
+                VStack(spacing: 8) {
+                    Slider(value: $currentTime, in: 0...duration, onEditingChanged: { editing in
+                        if !editing {
+                            audioPlayer?.currentTime = currentTime
+                        }
+                    })
+                    .accentColor(.pink)
+                    
                     HStack {
-                        if isGenerating { ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white)) }
-                        Text(isGenerating ? "Generating…" : "Generate Podcast").font(.headline.bold())
+                        Text(formatTime(currentTime))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Text(formatTime(duration))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(informationText.isEmpty ? LinearGradient(colors: [.gray, .gray], startPoint: .topLeading, endPoint: .bottomTrailing) : LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .disabled(informationText.isEmpty || isGenerating)
-                
-                if let audioURL = resultAudioURL {
-                    AudioPlayerView(
-                        audioURL: audioURL,
-                        isPlaying: $isPlaying,
-                        currentTime: $currentTime,
-                        duration: $duration,
-                        onPlayPause: { isPlaying ? pauseAudio() : playAudio() },
-                        onSeek: { time in seekAudio(to: time) },
-                        onDownload: { downloadAudio() },
-                        onShare: { shareAudio() }
-                    )
                 }
                 
-                Spacer(minLength: 60)
+                // Audio controls
+                HStack(spacing: 20) {
+                    // Share button
+                    Button(action: {
+                        // TODO: Implement share functionality
+                        print("Share audio")
+                    }) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 30))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Download button
+                    Button(action: {
+                        // TODO: Implement download functionality
+                        print("Download audio")
+                    }) {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Play/Pause button
+                    Button(action: {
+                        if isPlaying {
+                            pauseAudio()
+                        } else {
+                            playAudio()
+                        }
+                    }) {
+                        Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.system(size: 50))
+                            .foregroundColor(.pink)
+                    }
+                }
             }
             .padding()
         }
-        .onTapGesture { isFocused = false }
+        .onAppear {
+            setupAudioPlayer()
+        }
         .onDisappear {
             stopAudio()
         }
     }
     
-    private func generatePodcast() {
-        guard !informationText.isEmpty else { return }
-        isGenerating = true
-        resultAudioURL = nil
-        
-        Task {
-            do {
-                let url = URL(string: "https://veramo-podcast-20729573701.us-east1.run.app/generate-podcast")!
-                var request = URLRequest(url: url)
-                request.httpMethod = "POST"
-                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                
-                let payload = ["prompt": informationText]
-                request.httpBody = try JSONSerialization.data(withJSONObject: payload)
-                
-                let (data, _) = try await URLSession.shared.data(for: request)
-                let response = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-                
-                if let audioDict = response?["audio"] as? [String: Any],
-                   let audioURLString = audioDict["url"] as? String,
-                   let audioURL = URL(string: audioURLString) {
-                    
-                    // Download the audio file to a temporary location
-                    let (audioData, _) = try await URLSession.shared.data(from: audioURL)
-                    let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("podcast_\(UUID().uuidString).mp3")
-                    try audioData.write(to: tempURL)
-                    
-                    await MainActor.run {
-                        self.resultAudioURL = tempURL
-                        self.duration = response?["duration"] as? Double ?? 0
-                        self.isGenerating = false
-                        setupAudioPlayer()
-                    }
-                } else {
-                    await MainActor.run {
-                        self.isGenerating = false
-                    }
-                }
-            } catch {
-                print("❌ Podcast generation failed: \(error)")
-                await MainActor.run {
-                    self.isGenerating = false
-                }
-            }
-        }
-    }
-    
     private func setupAudioPlayer() {
-        guard let audioURL = resultAudioURL else { return }
-        
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
-            audioPlayerDelegate = AudioPlayerDelegate { [self] in
-                stopAudio()
+        // Ensure we have a prepared AVAudioPlayer for the provided URL
+        if audioPlayer == nil {
+            do {
+                // Configure audio session for playback
+                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
+                try AVAudioSession.sharedInstance().setActive(true)
+                audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
+                audioPlayer?.prepareToPlay()
+            } catch {
+                // Failed to initialize player – keep graceful UI
             }
-            audioPlayer?.delegate = audioPlayerDelegate
-            audioPlayer?.prepareToPlay()
-            if duration == 0 {
-                duration = audioPlayer?.duration ?? 0
-            }
-        } catch {
-            print("❌ Failed to setup audio player: \(error)")
         }
+        duration = audioPlayer?.duration ?? duration
+        currentTime = audioPlayer?.currentTime ?? 0
     }
     
     private func playAudio() {
-        audioPlayer?.play()
+        guard let player = audioPlayer else { return }
+        if currentTime > 0, abs(player.currentTime - currentTime) > 0.05 {
+            player.currentTime = currentTime
+        }
+        player.play()
         isPlaying = true
-        startPlaybackTimer()
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            guard let p = audioPlayer else { return }
+            currentTime = p.currentTime
+            duration = p.duration
+            if !p.isPlaying && currentTime >= duration - 0.05 {
+                stopAudio()
+            }
+        }
     }
     
     private func pauseAudio() {
         audioPlayer?.pause()
         isPlaying = false
-        stopPlaybackTimer()
+        timer?.invalidate()
+        timer = nil
     }
     
     private func stopAudio() {
         audioPlayer?.stop()
-        audioPlayer?.currentTime = 0
         isPlaying = false
         currentTime = 0
-        stopPlaybackTimer()
+        timer?.invalidate()
+        timer = nil
     }
     
-    private func seekAudio(to time: Double) {
-        audioPlayer?.currentTime = time
-        currentTime = time
-    }
-    
-    private func startPlaybackTimer() {
-        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            currentTime = audioPlayer?.currentTime ?? 0
-        }
-    }
-    
-    private func stopPlaybackTimer() {
-        playbackTimer?.invalidate()
-        playbackTimer = nil
-    }
-    
-    private func downloadAudio() {
-        // Placeholder for download functionality
-        print("Download audio")
-    }
-    
-    private func shareAudio() {
-        // Placeholder for share functionality
-        print("Share audio")
-    }
-}
-
-struct AudioPlayerView: View {
-    let audioURL: URL
-    @Binding var isPlaying: Bool
-    @Binding var currentTime: Double
-    @Binding var duration: Double
-    let onPlayPause: () -> Void
-    let onSeek: (Double) -> Void
-    let onDownload: () -> Void
-    let onShare: () -> Void
-    
-    var body: some View {
-        VStack(spacing: 16) {
-            // Progress bar
-            VStack(spacing: 8) {
-                Slider(value: Binding(
-                    get: { currentTime },
-                    set: { onSeek($0) }
-                ), in: 0...max(duration, 1))
-                .accentColor(.pink)
-                
-                HStack {
-                    Text(timeString(from: currentTime))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(timeString(from: duration))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            // Control buttons
-            HStack(spacing: 24) {
-                Button(action: onShare) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.title2)
-                        .foregroundColor(.primary)
-                }
-                
-                Button(action: onDownload) {
-                    Image(systemName: "arrow.down.circle")
-                        .font(.title2)
-                        .foregroundColor(.primary)
-                }
-                
-                Button(action: onPlayPause) {
-                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 50))
-                        .foregroundColor(.pink)
-                }
-            }
-        }
-        .padding()
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-    
-    private func timeString(from timeInterval: Double) -> String {
-        let minutes = Int(timeInterval) / 60
-        let seconds = Int(timeInterval) % 60
+    private func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
         return String(format: "%d:%02d", minutes, seconds)
     }
 }
