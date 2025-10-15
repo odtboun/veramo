@@ -23,9 +23,16 @@ def generate_short_animation():
             return jsonify({"error": "FAL_KEY not set"}), 500
 
         if request.content_type and request.content_type.startswith('multipart/form-data'):
-            # Expecting fields: description (text), image (file)
+            # Expecting fields: description (text), image (file), duration (optional, default 5)
             description = request.form.get('description', '').strip()
             image_file = request.files.get('image')
+            duration_str = request.form.get('duration', '5').strip()
+            
+            # Parse duration, default to 5 if not provided or invalid
+            try:
+                duration = int(duration_str) if duration_str else 5
+            except ValueError:
+                duration = 5
 
             if not description:
                 return jsonify({"error": "description is required"}), 400
@@ -40,10 +47,18 @@ def generate_short_animation():
                 uploaded_url = fal_client.upload_file(tmp.name)
             image_url = uploaded_url
         else:
-            # JSON body: { description: string, image_url: string | data_uri }
+            # JSON body: { description: string, image_url: string | data_uri, duration: number (optional, default 5) }
             data = request.get_json(silent=True) or {}
             description = (data.get('description') or '').strip()
             image_url = (data.get('image_url') or '').strip()
+            duration = data.get('duration', 5)
+            
+            # Ensure duration is an integer, default to 5 if not provided or invalid
+            try:
+                duration = int(duration) if duration is not None else 5
+            except (ValueError, TypeError):
+                duration = 5
+                
             if not description:
                 return jsonify({"error": "description is required"}), 400
             if not image_url:
@@ -64,11 +79,9 @@ def generate_short_animation():
         result = fal_client.submit(
             "workflows/odtboun/short-couple-video",
             arguments={
-                "input": {
-                    "concept_description": description,
-                    "image_url_field": image_url,
-                    "negative_prompt": ""
-                }
+                "concept_description": description,
+                "image_url_field": image_url,
+                "duration": duration
             }
         ).get()
 
