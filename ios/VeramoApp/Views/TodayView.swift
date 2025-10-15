@@ -5,6 +5,7 @@ struct TodayView: View {
     @State private var streakCount = 0
     @State private var hasMemory = false
     @State private var showingAddMemory = false
+    @State private var showingSettings = false
     @State private var lastStreakCheckDate: String? = nil
     @State private var lastUpdateTimestamp: Date? = nil
     @State private var showingImageFullScreen = false
@@ -167,10 +168,25 @@ struct TodayView: View {
             .sheet(isPresented: $showingAddMemory) {
                 AddMemoryView(subscriptionManager: SubscriptionManager())
             }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView(authVM: AuthViewModel())
+            }
             .overlay {
                 if showingImageFullScreen, let imageUrl = selectedImageUrl {
                     TodayAnimatedImageView(imageUrl: imageUrl, isPresented: $showingImageFullScreen)
                 }
+            }
+            .overlay(alignment: .topTrailing) {
+                Button(action: { showingSettings = true }) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundColor(.gray)
+                        .padding(12)
+                        .background(Color.white.opacity(0.001))
+                        .contentShape(Rectangle())
+                }
+                .padding(.trailing, 16)
+                .padding(.top, 8)
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SmartRefreshRequested"))) { _ in
                 Task { await checkForNewEntries() }
