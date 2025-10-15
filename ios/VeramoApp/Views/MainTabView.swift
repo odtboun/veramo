@@ -638,6 +638,7 @@ struct StreakProgressView: View {
     @State private var showCouplePodcast: Bool = false
     @State private var showShortVideoWithAudio: Bool = false
     @State private var selectedVideoType: String = "Short Video"
+    @State private var lastStreakCheckDate: String? = nil
     
     private var milestones: [StreakMilestone] {
         [
@@ -771,6 +772,107 @@ struct StreakProgressView: View {
             }
         }
         .preferredColorScheme(.light)
+        .onAppear {
+            Task {
+                await checkStreakIfNeeded()
+            }
+        }
+    }
+    
+    private func checkStreakIfNeeded() async {
+        let today = Date()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let todayString = dateFormatter.string(from: today)
+        
+        // Check if we already calculated streak today
+        if lastStreakCheckDate == todayString {
+            print("🔥 Streak already checked today, skipping...")
+            return
+        }
+        
+        print("🔥 Calculating streak for \(todayString)...")
+        await calculateStreak()
+        
+        // Mark that we checked today
+        await MainActor.run {
+            self.lastStreakCheckDate = todayString
+        }
+    }
+    
+    private func calculateStreak() async {
+        do {
+            let userId = try await SupabaseService.shared.currentUserId()
+            let couple = await SupabaseService.shared.fetchCouple()
+            
+            guard let couple = couple else {
+                print("❌ No couple found for streak calculation")
+                await MainActor.run { self.currentStreak = 0 }
+                return
+            }
+            
+            // Get partner's user ID
+            let partnerId = couple.user1_id == userId ? couple.user2_id : couple.user1_id
+            
+            var streak = 0
+            let calendar = Calendar.current
+            let currentDate = Date()
+            
+            // Check up to 365 days back (reasonable limit)
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            
+            for dayOffset in 0..<365 {
+                let checkDate = calendar.date(byAdding: .day, value: -dayOffset, to: currentDate) ?? currentDate
+                let formattedDate = dateFormatter.string(from: checkDate)
+                
+                // Check if both users uploaded on this date
+                let bothUploaded = try await checkBothUsersUploaded(
+                    coupleId: couple.id,
+                    userId: userId,
+                    partnerId: partnerId,
+                    date: formattedDate
+                )
+                
+                if bothUploaded {
+                    streak += 1
+                    print("✅ Day \(dayOffset): Both uploaded on \(formattedDate) - Streak: \(streak)")
+                } else {
+                    print("❌ Day \(dayOffset): Not both uploaded on \(formattedDate) - Streak ends at \(streak)")
+                    break
+                }
+            }
+            
+            print("🔥 Final streak: \(streak) days")
+            await MainActor.run {
+                self.currentStreak = streak
+            }
+            
+        } catch {
+            print("❌ Failed to calculate streak: \(error)")
+            await MainActor.run { self.currentStreak = 0 }
+        }
+    }
+    
+    private func checkBothUsersUploaded(coupleId: UUID, userId: UUID, partnerId: UUID, date: String) async throws -> Bool {
+        struct CalendarEntryRow: Decodable {
+            let created_by_user_id: UUID
+        }
+        
+        // Get all entries for this couple on this date
+        let entries: [CalendarEntryRow] = try await SupabaseService.shared.client
+            .from("calendar_entries")
+            .select("created_by_user_id")
+            .eq("couple_id", value: coupleId)
+            .eq("date", value: date)
+            .execute().value
+        
+        // Check if both users have entries
+        let userIds = Set(entries.map { $0.created_by_user_id })
+        let bothUploaded = userIds.contains(userId) && userIds.contains(partnerId)
+        
+        print("📊 Date \(date): \(entries.count) entries, User IDs: \(userIds), Both uploaded: \(bothUploaded)")
+        return bothUploaded
     }
 }
 
