@@ -1261,7 +1261,7 @@ struct CreateVideoWithAudioView: View {
                 var request = URLRequest(url: URL(string: "https://veramo-video-with-audio-228424037435.us-east1.run.app/generate-video-with-audio")!)
                 request.httpMethod = "POST"
                 request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-                request.timeoutInterval = 180
+                request.timeoutInterval = 900
 
                 var body = Data()
                 func appendField(name: String, value: String) {
