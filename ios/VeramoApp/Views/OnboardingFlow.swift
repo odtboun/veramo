@@ -129,7 +129,7 @@ struct OnboardingFlow: View {
                     } else {
                         Text(step == 6 ? "Find the right plan for us" : (step < 6 ? "Continue" : "Get started"))
                             .font(.headline.weight(.semibold))
-                        Image(systemName: step == 6 ? "creditcard" : (step < 6 ? "arrow.right" : "creditcard"))
+                        if step < 6 { Image(systemName: "arrow.right") }
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -452,15 +452,20 @@ struct OnboardingFlow: View {
                         Button {
                             selectedVibe = vibe
                         } label: {
-                            Text(vibe)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundColor(selectedVibe == vibe ? .white : .primary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(selectedVibe == vibe ? Color.pink : Color.secondary.opacity(0.1))
-                                )
+                            HStack(spacing: 8) {
+                                // Simple icons for each vibe option
+                                Image(systemName: vibe == "Homebodies" ? "house.fill" : (vibe == "Explorers" ? "globe.americas.fill" : (vibe == "Social butterflies" ? "person.3.fill" : "book.fill")))
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text(vibe)
+                                    .font(.subheadline.weight(.semibold))
+                            }
+                            .foregroundColor(selectedVibe == vibe ? .white : .primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(selectedVibe == vibe ? Color.pink : Color.secondary.opacity(0.1))
+                            )
                         }
                         .buttonStyle(.plain)
                     }
@@ -471,7 +476,7 @@ struct OnboardingFlow: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("How long have you been together?")
                     .font(.headline)
-                let durations = ["less than 6 months", "6 months - 1 year", "1 - 2 years", "2+ years"]
+                let durations = ["Less than 6 months", "6 months - 1 year", "1 - 2 years", "2+ years"]
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                     ForEach(durations, id: \.self) { d in
                         Button {
@@ -481,7 +486,7 @@ struct OnboardingFlow: View {
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundColor(selectedDuration == d ? .white : .primary)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
+                                .padding(.vertical, 16)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
                                         .fill(selectedDuration == d ? Color.pink : Color.secondary.opacity(0.1))
@@ -501,11 +506,11 @@ struct OnboardingFlow: View {
                         Button {
                             selectedLongDistance = ans
                         } label: {
-                            Text(ans.lowercased())
+                            Text(ans)
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundColor(selectedLongDistance == ans ? .white : .primary)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
+                                .padding(.vertical, 16)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
                                         .fill(selectedLongDistance == ans ? Color.pink : Color.secondary.opacity(0.1))
