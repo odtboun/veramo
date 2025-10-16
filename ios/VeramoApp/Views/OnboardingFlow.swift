@@ -425,10 +425,10 @@ struct OnboardingFlow: View {
 
     private var step6: some View {
         VStack(spacing: 18) {
-            Text("Build a Streak for Special Videos")
+            Text("Grow Your Streak for Bonus Features")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
-            Text("Keep your streak above 30 to unlock free Monthly Dump videos, animations to celebrate your anniversary, birthdays and more!")
+            Text("Generate couple podcasts, animations and videos when you hit streak milestones")
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
