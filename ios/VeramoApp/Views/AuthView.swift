@@ -19,8 +19,9 @@ struct AuthView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             
-            Text("Sign in to continue")
+            Text("This screen is for testers, there won't be a login step before the onboarding flow in the live version.")
                 .font(.subheadline)
+                .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
             
             Spacer()
