@@ -21,6 +21,10 @@ struct OnboardingFlow: View {
     @State private var isConnecting: Bool = false // NEW: Track connection state
     @State private var connectionError: String? = nil // NEW: Track connection errors
     @State private var userName: String = "love" // NEW: Default user name for shareable image
+    // Step 6 (preferences) selections
+    @State private var selectedVibe: String? = nil
+    @State private var selectedDuration: String? = nil
+    @State private var selectedLongDistance: String? = nil
     
     var body: some View {
         VStack(spacing: 0) {
@@ -53,7 +57,7 @@ struct OnboardingFlow: View {
 
     private var header: some View {
         VStack(spacing: 8) {
-            Text("Step \(step) of 5")
+            Text("Step \(step) of 6")
                 .font(.footnote)
                 .foregroundColor(.secondary)
             pageDots
@@ -68,7 +72,8 @@ struct OnboardingFlow: View {
             case 2: step3 // former step3 becomes step2
             case 3: step4 // former step4 becomes step3
             case 4: step5 // former step5 becomes step4
-            default: step6 // former step6 becomes step5
+            case 5: step6 // former step6 becomes step5
+            default: step7 // new preferences step
             }
         }
         .animation(.spring(response: 0.5, dampingFraction: 0.9), value: step)
@@ -106,7 +111,7 @@ struct OnboardingFlow: View {
                         // Proceed to next step if partner is not on Veramo
                         withAnimation { step += 1 }
                     }
-                } else if step < 5 {
+                } else if step < 6 {
                     withAnimation { step += 1 }
                 } else {
                     // Temporary: finish onboarding and hand off to paywall elsewhere
@@ -122,9 +127,9 @@ struct OnboardingFlow: View {
                         Text("Connecting...")
                             .font(.headline.weight(.semibold))
                     } else {
-                        Text(step < 6 ? "Continue" : "Get started")
+                        Text(step == 6 ? "Find the right plan for us" : (step < 6 ? "Continue" : "Get started"))
                             .font(.headline.weight(.semibold))
-                        Image(systemName: step < 6 ? "arrow.right" : "creditcard")
+                        Image(systemName: step == 6 ? "creditcard" : (step < 6 ? "arrow.right" : "creditcard"))
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -137,8 +142,15 @@ struct OnboardingFlow: View {
                 .shadow(color: .pink.opacity(0.3), radius: 8, x: 0, y: 6)
             }
             .buttonStyle(.plain)
-            .disabled(step == 1 && (partnerSelection == nil || (partnerSelection == .yes && inviteCode.isEmpty))) // Disable if no selection or if partner is yes but no invite code
-            .opacity(step == 1 && (partnerSelection == nil || (partnerSelection == .yes && inviteCode.isEmpty)) ? 0.5 : 1.0) // Visual feedback for disabled state
+            .disabled(
+                (step == 1 && (partnerSelection == nil || (partnerSelection == .yes && inviteCode.isEmpty))) ||
+                (step == 6 && (selectedVibe == nil || selectedDuration == nil || selectedLongDistance == nil))
+            )
+            .opacity(
+                (step == 1 && (partnerSelection == nil || (partnerSelection == .yes && inviteCode.isEmpty))) ||
+                (step == 6 && (selectedVibe == nil || selectedDuration == nil || selectedLongDistance == nil))
+                ? 0.5 : 1.0
+            )
         }
     }
 
@@ -174,7 +186,7 @@ struct OnboardingFlow: View {
 
     private var pageDots: some View {
         HStack(spacing: 6) {
-            ForEach(1...5, id: \.self) { i in
+            ForEach(1...6, id: \.self) { i in
                 Circle()
                     .fill(i == step ? Color.primary : Color.secondary.opacity(0.3))
                     .frame(width: i == step ? 8 : 6, height: i == step ? 8 : 6)
@@ -420,6 +432,89 @@ struct OnboardingFlow: View {
                 .resizable()
                 .aspectRatio(1, contentMode: .fit)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    // MARK: - New Step 6: Preferences
+    private var step7: some View {
+        VStack(spacing: 22) {
+            Text("Let's create the right experience for you")
+                .font(.largeTitle.bold())
+                .multilineTextAlignment(.center)
+
+            // Q1: Couple vibe
+            VStack(alignment: .leading, spacing: 10) {
+                Text("What's your couple's vibe?")
+                    .font(.headline)
+                let vibes = ["Homebodies", "Explorers", "Social butterflies", "Partners in learning"]
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    ForEach(vibes, id: \.self) { vibe in
+                        Button {
+                            selectedVibe = vibe
+                        } label: {
+                            Text(vibe)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(selectedVibe == vibe ? .white : .primary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(selectedVibe == vibe ? Color.pink : Color.secondary.opacity(0.1))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            // Q2: Duration
+            VStack(alignment: .leading, spacing: 10) {
+                Text("How long have you been together?")
+                    .font(.headline)
+                let durations = ["less than 6 months", "6 months - 1 year", "1 - 2 years", "2+ years"]
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    ForEach(durations, id: \.self) { d in
+                        Button {
+                            selectedDuration = d
+                        } label: {
+                            Text(d)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(selectedDuration == d ? .white : .primary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(selectedDuration == d ? Color.pink : Color.secondary.opacity(0.1))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            // Q3: Long distance
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Is your relationship long-distance?")
+                    .font(.headline)
+                HStack(spacing: 10) {
+                    ForEach(["Yes", "No"], id: \.self) { ans in
+                        Button {
+                            selectedLongDistance = ans
+                        } label: {
+                            Text(ans.lowercased())
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(selectedLongDistance == ans ? .white : .primary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(selectedLongDistance == ans ? Color.pink : Color.secondary.opacity(0.1))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
         }
     }
 
