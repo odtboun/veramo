@@ -438,7 +438,7 @@ struct OnboardingFlow: View {
     // MARK: - New Step 6: Preferences
     private var step7: some View {
         VStack(spacing: 22) {
-            Text("Let's create the right experience for you")
+            Text("Design Your Experience")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
 
@@ -460,8 +460,8 @@ struct OnboardingFlow: View {
                                     .font(.subheadline.weight(.semibold))
                             }
                             .foregroundColor(selectedVibe == vibe ? .white : .primary)
-                            .frame(maxWidth: .infinity, minHeight: 100)
-                            .padding(.vertical, 18)
+                            .frame(maxWidth: .infinity, minHeight: 84)
+                            .padding(.vertical, 12)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
                                     .fill(selectedVibe == vibe ? Color.pink : Color.secondary.opacity(0.1))
