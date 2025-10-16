@@ -644,10 +644,10 @@ struct StreakProgressView: View {
         [
             StreakMilestone(day: 0, title: "Generate Images in Any Style", description: "Create beautiful AI-generated images with any style you choose", requirementText: "Available Now", isUnlocked: true),
             StreakMilestone(day: 7, title: "Couple Podcast", description: "An audio podcast discussing your relationship", requirementText: "7+ day streak", isUnlocked: currentStreak >= 7),
-            StreakMilestone(day: 60, title: "Short Animation", description: "Personalized animations celebrating your milestones", requirementText: "60+ day streak", isUnlocked: currentStreak >= 60),
-            StreakMilestone(day: 90, title: "Short Video", description: "A video podcast discussing your relationship", requirementText: "90+ day streak", isUnlocked: currentStreak >= 90),
-            StreakMilestone(day: 180, title: "Longer Animation", description: "Extended personalized animations celebrating your milestones", requirementText: "180+ day streak", isUnlocked: currentStreak >= 180),
-            StreakMilestone(day: 365, title: "Longer Video", description: "Extended video podcast discussing your relationship", requirementText: "365+ day streak", isUnlocked: currentStreak >= 365)
+            StreakMilestone(day: 60, title: "Short Animation", description: "Turn a reference image into a short, personalized animation.", requirementText: "60+ day streak", isUnlocked: currentStreak >= 60),
+            StreakMilestone(day: 90, title: "Short Video", description: "Create a short video with audio from a reference image.", requirementText: "90+ day streak", isUnlocked: currentStreak >= 90),
+            StreakMilestone(day: 180, title: "Longer Animation", description: "Extended personalized animations from your images.", requirementText: "180+ day streak", isUnlocked: currentStreak >= 180),
+            StreakMilestone(day: 365, title: "Longer Video", description: "Extended videos with audio generated from your images.", requirementText: "365+ day streak", isUnlocked: currentStreak >= 365)
         ]
     }
     
