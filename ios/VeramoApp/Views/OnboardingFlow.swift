@@ -452,16 +452,16 @@ struct OnboardingFlow: View {
                         Button {
                             selectedVibe = vibe
                         } label: {
-                            HStack(spacing: 8) {
-                                // Simple icons for each vibe option
+                            VStack(spacing: 6) {
+                                // Icons shown ABOVE text; 3x previous size
                                 Image(systemName: vibe == "Homebodies" ? "house.fill" : (vibe == "Explorers" ? "globe.americas.fill" : (vibe == "Social butterflies" ? "person.3.fill" : "book.fill")))
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .font(.system(size: 42, weight: .semibold))
                                 Text(vibe)
                                     .font(.subheadline.weight(.semibold))
                             }
                             .foregroundColor(selectedVibe == vibe ? .white : .primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
+                            .frame(maxWidth: .infinity, minHeight: 100)
+                            .padding(.vertical, 18)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
                                     .fill(selectedVibe == vibe ? Color.pink : Color.secondary.opacity(0.1))
