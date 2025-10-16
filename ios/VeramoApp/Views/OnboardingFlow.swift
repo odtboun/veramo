@@ -454,7 +454,7 @@ struct OnboardingFlow: View {
                         } label: {
                             VStack(spacing: 6) {
                                 // Icons shown ABOVE text; 3x previous size
-                                Image(systemName: vibe == "Homebodies" ? "house.fill" : (vibe == "Explorers" ? "globe.americas.fill" : (vibe == "Social butterflies" ? "person.3.fill" : "book.fill")))
+                                Image(systemName: vibe == "Homebodies" ? "cup.and.saucer.fill" : (vibe == "Explorers" ? "globe.americas.fill" : (vibe == "Social butterflies" ? "party.popper.fill" : "book.fill")))
                                     .font(.system(size: 28, weight: .semibold))
                                 Text(vibe)
                                     .font(.subheadline.weight(.semibold))
